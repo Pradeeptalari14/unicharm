@@ -483,12 +483,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setCreateUserOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
-                            >
-                                <UserPlus size={16} /> Add User
-                            </button>
+                            {currentUser?.role === Role.ADMIN && (
+                                <button
+                                    onClick={() => setCreateUserOpen(true)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
+                                >
+                                    <UserPlus size={16} /> Add User
+                                </button>
+                            )}
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                                 <input
