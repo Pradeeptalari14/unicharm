@@ -255,12 +255,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     </div>
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setAddWidgetOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-lg shadow-blue-200 transition-all hover:scale-105"
-                        >
-                            <PlusCircle size={16} /> Add Content
-                        </button>
-                        <button
                             onClick={handleExportExcel}
                             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-lg shadow-green-200 transition-all hover:scale-105"
                         >
