@@ -475,10 +475,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                 </div>
                                 <div className="flex gap-2 items-center">
                                     {/* Admin View As Filter for Database */}
-                                    {currentUser?.role === Role.ADMIN && (
+                                    {currentUser && currentUser.role === Role.ADMIN && (
                                         <select
                                             className="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm mr-2"
-                                            value={dashboardRoleFilter}
+                                            value={dashboardRoleFilter || Role.ADMIN}
                                             onChange={(e) => setDashboardRoleFilter(e.target.value as any)}
                                         >
                                             <option value={Role.ADMIN}>All Operations</option>
@@ -521,51 +521,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {visibleSheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
-                                            <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-blue-50 transition cursor-pointer group">
-                                                <td className="p-2 border border-gray-200 font-mono text-blue-600 font-bold whitespace-nowrap">{s.id}</td>
-                                                <td className="p-2 border border-gray-200 whitespace-nowrap">{s.date}</td>
-                                                <td className="p-2 border border-gray-200 whitespace-nowrap">{s.shift}</td>
-                                                <td className="p-2 border border-gray-200 max-w-[150px] truncate" title={s.destination}>{s.destination}</td>
-                                                <td className="p-2 border border-gray-200 text-center">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border
-                                                            ${s.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                                                            s.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                                'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                                                        {s.status}
-                                                    </span>
-                                                </td>
-                                                {/* Staging Info */}
-                                                <td className="p-2 border border-gray-200">
-                                                    <div className="font-semibold">{s.supervisorName}</div>
-                                                    <div className="text-[10px] text-gray-500">{s.createdBy}</div>
-                                                </td>
-                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.createdAt)}</td>
+                                        {visibleSheets && visibleSheets.length > 0 ? (
+                                            visibleSheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                                                <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-blue-50 transition cursor-pointer group">
+                                                    <td className="p-2 border border-gray-200 font-mono text-blue-600 font-bold whitespace-nowrap">{s.id}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap">{s.date}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap">{s.shift}</td>
+                                                    <td className="p-2 border border-gray-200 max-w-[150px] truncate" title={s.destination}>{s.destination}</td>
+                                                    <td className="p-2 border border-gray-200 text-center">
+                                                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border
+                                                                ${s.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                                s.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                    'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                            {s.status}
+                                                        </span>
+                                                    </td>
+                                                    {/* Staging Info */}
+                                                    <td className="p-2 border border-gray-200">
+                                                        <div className="font-semibold">{s.supervisorName}</div>
+                                                        <div className="text-[10px] text-gray-500">{s.createdBy}</div>
+                                                    </td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.createdAt)}</td>
 
-                                                {/* Loading Info */}
-                                                <td className="p-2 border border-gray-200">
-                                                    <div className="font-semibold">{s.loadingSvName || '-'}</div>
-                                                    {s.lockedBy && <div className="text-[10px] text-gray-500">{s.lockedBy}</div>}
-                                                </td>
-                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.lockedAt)}</td>
+                                                    {/* Loading Info */}
+                                                    <td className="p-2 border border-gray-200">
+                                                        <div className="font-semibold">{s.loadingSvName || '-'}</div>
+                                                        {s.lockedBy && <div className="text-[10px] text-gray-500">{s.lockedBy}</div>}
+                                                    </td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.lockedAt)}</td>
 
-                                                {/* Completion Info */}
-                                                <td className="p-2 border border-gray-200 font-semibold">{s.completedBy || '-'}</td>
-                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.completedAt)}</td>
+                                                    {/* Completion Info */}
+                                                    <td className="p-2 border border-gray-200 font-semibold">{s.completedBy || '-'}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.completedAt)}</td>
 
-                                                <td className="p-2 border border-gray-200 text-center">
-                                                    <button onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const reason = window.prompt("To DELETE this sheet, you must provide a reason:");
-                                                        if (reason && reason.trim()) {
-                                                            if (window.confirm(`Are you sure you want to PERMANENTLY delete Sheet ${s.id}?\nReason: ${reason}`)) {
-                                                                deleteSheet(s.id, reason);
+                                                    <td className="p-2 border border-gray-200 text-center">
+                                                        <button onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const reason = window.prompt("To DELETE this sheet, you must provide a reason:");
+                                                            if (reason && reason.trim()) {
+                                                                if (window.confirm(`Are you sure you want to PERMANENTLY delete Sheet ${s.id}?\nReason: ${reason}`)) {
+                                                                    deleteSheet(s.id, reason);
+                                                                }
                                                             }
-                                                        }
-                                                    }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                        }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan={12} className="p-4 text-center text-gray-400 font-medium italic">No sheets found in this view.</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
