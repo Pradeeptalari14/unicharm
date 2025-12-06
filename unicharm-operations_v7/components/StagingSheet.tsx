@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../AppContext';
 import { SheetData, SheetStatus, StagingItem, LoadingItemData, AdditionalItem } from '../types';
 import { EMPTY_STAGING_ITEMS } from '../services/mockData';
-import { Save, Lock, ArrowLeft, Printer, Calendar, User, MapPin, Plus, AlertTriangle } from 'lucide-react';
+import { Save, Lock, ArrowLeft, Printer, Calendar, MapPin, Plus, AlertTriangle, BadgeInfo } from 'lucide-react';
 
 interface Props {
     existingSheet?: SheetData;
@@ -442,11 +442,11 @@ export const StagingSheet: React.FC<Props> = ({ existingSheet, onCancel, onLock,
                         <input type="text" value={destination} onChange={e => { setDestination(e.target.value); setIsDirty(true); }} disabled={isLocked} className="w-full border border-slate-200 bg-white p-2.5 rounded-lg text-sm text-slate-700 outline-none placeholder:text-slate-300" placeholder="Enter Destination" />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><User size={14} /> Supervisor Name *</label>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><BadgeInfo size={14} /> Supervisor Name *</label>
                         <input type="text" value={supervisorName} disabled={true} className="w-full border border-slate-200 bg-slate-100 p-2.5 rounded-lg text-sm text-slate-500 outline-none cursor-not-allowed font-medium" />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><User size={14} /> Emp. Code *</label>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><BadgeInfo size={14} /> Emp. Code *</label>
                         <input type="text" value={empCode} disabled={true} className="w-full border border-slate-200 bg-slate-100 p-2.5 rounded-lg text-sm text-slate-500 outline-none cursor-not-allowed font-medium" />
                     </div>
                     <div>

@@ -66,17 +66,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
     const [isResetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [resetData, setResetData] = useState<{ id: string, username: string, newPass: string } | null>(null);
 
+    // Filter sheets based on user role (Strict access control)
+    const visibleSheets = useMemo(() => {
+        if (!currentUser) return [];
+        if (currentUser.role === Role.ADMIN || currentUser.role === Role.VIEWER) return sheets; // Viewers can see all? Or restrict? Defaulting to all for Viewer for now, but strictly limited for Supervisors as requested.
+
+        // For Staging/Loading Supervisors, ONLY show sheets where they are involved
+        if (currentUser.role === Role.STAGING_SUPERVISOR) {
+            return sheets.filter(s => s.supervisorName === currentUser.fullName || s.supervisorName === currentUser.username);
+        }
+        if (currentUser.role === Role.LOADING_SUPERVISOR) {
+            return sheets.filter(s => s.loadingSvName === currentUser.fullName || s.loadingSvName === currentUser.username);
+        }
+        return [];
+    }, [sheets, currentUser]);
+
     // --- ANALYTICS DATA ---
     const analytics = useMemo(() => {
-        const total = sheets.length;
-        const completed = sheets.filter(s => s.status === SheetStatus.COMPLETED).length;
-        const locked = sheets.filter(s => s.status === SheetStatus.LOCKED).length;
-        const draft = sheets.filter(s => s.status === SheetStatus.DRAFT).length;
+        const total = visibleSheets.length;
+        const completed = visibleSheets.filter(s => s.status === SheetStatus.COMPLETED).length;
+        const locked = visibleSheets.filter(s => s.status === SheetStatus.LOCKED).length;
+        const draft = visibleSheets.filter(s => s.status === SheetStatus.DRAFT).length;
 
-        // Pending Users
-        const pendingUsersCount = users.filter(u => !u.isApproved).length;
+        // Pending Users - ADMIN ONLY (others see 0)
+        const pendingUsersCount = currentUser?.role === Role.ADMIN ? users.filter(u => !u.isApproved).length : 0;
 
-        // Daily Volume (Last 7 days)
+        // Daily Volume (Last 7 days) - Calculated from visibleSheets
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
@@ -86,14 +101,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
         const volumeTrend = last7Days.map(date => {
             return {
                 date: new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }),
-                completed: sheets.filter(s => s.status === SheetStatus.COMPLETED && s.completedAt?.startsWith(date)).length,
-                created: sheets.filter(s => s.createdAt.startsWith(date)).length
+                completed: visibleSheets.filter(s => s.status === SheetStatus.COMPLETED && s.completedAt?.startsWith(date)).length,
+                created: visibleSheets.filter(s => s.createdAt.startsWith(date)).length
             };
         });
 
-        // Supervisor Performance
+        // Supervisor Performance - Only for Admin (others will see empty or self, but we'll hide the chart)
         const supervisorStats: Record<string, number> = {};
-        sheets.forEach(s => {
+        visibleSheets.forEach(s => {
             if (s.supervisorName) {
                 supervisorStats[s.supervisorName] = (supervisorStats[s.supervisorName] || 0) + 1;
             }
@@ -110,7 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
         ];
 
         return { total, completed, locked, draft, volumeTrend, supervisorData, pieData, pendingUsersCount };
-    }, [sheets, users]);
+    }, [visibleSheets, users, currentUser]);
 
     // --- HANDLERS ---
     const handleDeleteUser = (e: React.MouseEvent, id: string, name: string) => {
@@ -138,7 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
     // --- EXPORT ---
     const downloadCSV = () => {
         const headers = ['Sheet ID', 'Date', 'Shift', 'Destination', 'Status', 'Staging SV', 'Created By', 'Created At', 'Loading SV', 'Loading Start By', 'Loading Start At', 'Vehicle', 'Completed By', 'Completed At', 'Total Duration'];
-        const rows = sheets.map(s => [
+        const rows = visibleSheets.map(s => [
             s.id,
             s.date,
             s.shift,
@@ -170,6 +185,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
 
     // --- RENDER CONTENT ---
     const renderContent = () => {
+        // Security fallback: If non-admin tries to render restricted tabs, fallback to dashboard
+        if (activeTab !== 'dashboard' && currentUser?.role !== Role.ADMIN) {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                    <ShieldAlert className="text-red-500 w-12 h-12 mb-4" />
+                    <h3 className="text-xl font-bold text-gray-800">Access Restricted</h3>
+                    <p className="text-gray-500 mt-2">You do not have permission to view this section.</p>
+                </div>
+            );
+        }
+
         switch (activeTab) {
             case 'dashboard':
                 return (
@@ -181,7 +207,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                 <div className="relative z-10">
                                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Sheets</p>
                                     <h3 className="text-3xl font-extrabold text-gray-800">{analytics.total}</h3>
-                                    <div className="mt-2 flex items-center text-xs text-blue-600 font-medium"><Activity size={14} className="mr-1" /> All Time</div>
+                                    <div className="mt-2 flex items-center text-xs text-blue-600 font-medium"><Activity size={14} className="mr-1" /> {currentUser?.role === Role.ADMIN ? 'All Time' : 'Assigned to You'}</div>
                                 </div>
                             </div>
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
@@ -197,7 +223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                 <div className="relative z-10">
                                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">In Progress</p>
                                     <h3 className="text-3xl font-extrabold text-orange-600">{analytics.locked}</h3>
-                                    <div className="mt-2 flex items-center text-xs text-orange-600 font-medium"><Truck size={14} className="mr-1" /> Currently Loading</div>
+                                    <div className="mt-2 flex items-center text-xs text-orange-600 font-medium"><Truck size={14} className="mr-1" /> {currentUser?.role === Role.ADMIN ? 'Currently Loading' : 'Your Active Sheets'}</div>
                                 </div>
                             </div>
 
@@ -291,23 +317,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                             </div>
                         </div>
 
-                        {/* Top Supervisors */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                                <UserCheck size={18} className="text-purple-500" /> Top Supervisors
-                            </h3>
-                            <div className="h-64">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={analytics.supervisorData} layout="vertical" margin={{ left: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                        <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 13, fontWeight: 500 }} />
-                                        <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                                        <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={24} name="Sheets Managed" />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                        {/* Top Supervisors - ADMIN ONLY */}
+                        {currentUser?.role === Role.ADMIN && (
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                    <UserCheck size={18} className="text-purple-500" /> Top Supervisors
+                                </h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={analytics.supervisorData} layout="vertical" margin={{ left: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                                            <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                            <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 13, fontWeight: 500 }} />
+                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                                            <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={24} name="Sheets Managed" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 );
 
@@ -553,25 +581,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                 >
                     <LayoutDashboard size={18} /> Overview
                 </button>
-                <button
-                    onClick={() => setActiveTab('tracking')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'tracking' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                    <Activity size={18} /> Tracking
-                </button>
-                <button
-                    onClick={() => setActiveTab('users')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'} relative`}
-                >
-                    <UserIcon size={18} /> User Access
-                    {analytics.pendingUsersCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>}
-                </button>
-                <button
-                    onClick={() => setActiveTab('database')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'database' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                    <Database size={18} /> Database
-                </button>
+
+                {currentUser?.role === Role.ADMIN && (
+                    <>
+                        <button
+                            onClick={() => setActiveTab('tracking')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'tracking' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Activity size={18} /> Tracking
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'} relative`}
+                        >
+                            <UserIcon size={18} /> User Access
+                            {analytics.pendingUsersCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('database')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'database' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Database size={18} /> Database
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* Main Content Area */}
