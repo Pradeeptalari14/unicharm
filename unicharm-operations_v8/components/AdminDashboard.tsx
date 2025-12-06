@@ -573,13 +573,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                                     >
                                                         <Key size={16} />
                                                     </button>
-                                                    <button
-                                                        onClick={(e) => handleUserDelete(e, user.id, user.username)}
-                                                        className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
-                                                        title="Delete User"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {currentUser?.role === Role.ADMIN && (
+                                                        <button
+                                                            onClick={(e) => handleUserDelete(e, user.id, user.username)}
+                                                            className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                                            title="Delete User"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </td>
