@@ -477,7 +477,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            {currentUser?.role === Role.ADMIN && (
+                            {(currentUser?.role === Role.ADMIN || currentUser?.role === Role.STAGING_SUPERVISOR || currentUser?.role === Role.LOADING_SUPERVISOR) && (
                                 <button
                                     onClick={() => setCreateUserOpen(true)}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
