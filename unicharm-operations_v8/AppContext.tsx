@@ -14,6 +14,7 @@ interface AppContextType {
     logout: () => Promise<void>;
     register: (user: User) => Promise<void>;
     approveUser: (id: string, approve: boolean) => Promise<void>;
+    deleteUser: (id: string) => Promise<void>;
     resetPassword: (id: string, newPass: string) => Promise<void>;
     addSheet: (sheet: SheetData) => Promise<void>;
     updateSheet: (sheet: SheetData) => Promise<void>;
@@ -49,11 +50,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .order('created_at', { ascending: false });
 
         if (data && !error) {
-            const loadedSheets = data.map(d => ({
-                ...d.data,
-                id: d.id,
-                status: d.data.status || 'DRAFT'
-            })) as SheetData[];
+            const loadedSheets = data
+                .filter(d => d.data) // Filter out invalid/empty data
+                .map(d => ({
+                    ...d.data,
+                    id: d.id,
+                    status: d.data.status || 'DRAFT'
+                })) as SheetData[];
             setSheets(loadedSheets);
         }
     };
@@ -61,7 +64,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fetchUsers = async () => {
         const { data } = await supabase.from('users').select('*');
         if (data) {
-            const mappedUsers: User[] = data.map(d => d.data as User);
+            const mappedUsers: User[] = data
+                .filter(d => d.data) // Filter out null data
+                .map(d => d.data as User);
             setUsers(mappedUsers);
         }
     };

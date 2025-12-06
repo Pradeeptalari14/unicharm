@@ -21,6 +21,9 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate }) => {
     const { users, approveUser, deleteUser, sheets, deleteSheet, register, resetPassword, currentUser, isLoading } = useApp();
+
+    console.log("AdminDashboard Rendering. View:", viewMode, "User:", currentUser?.username, "Loading:", isLoading);
+
     const [searchTerm, setSearchTerm] = useState('');
 
     // Create User State
