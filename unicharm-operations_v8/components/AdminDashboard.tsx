@@ -9,9 +9,12 @@ import {
 import {
     Check, X, Clipboard, Truck, Users as UserIcon, Trash2,
     ShieldAlert, Activity, Search, UserCheck, UserX, UserPlus,
-    Key, Database, FileSpreadsheet, Download, Filter
+    Key, Database, FileSpreadsheet, Download, Filter, CheckCircle2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { widgetRegistry, getWidgetDefinition } from './widgets/WidgetRegistry';
+import { AddWidgetModal } from './widgets/AddWidgetModal';
+import { PlusCircle, MoreHorizontal, Settings2 } from 'lucide-react';
 
 interface AdminDashboardProps {
     viewMode: 'analytics' | 'users' | 'database';
@@ -40,6 +43,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
     // Reset Password State
     const [isResetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [resetData, setResetData] = useState<{ id: string, username: string, newPass: string } | null>(null);
+
+    // --- WIDGET SYSTEM STATE ---
+    // Persist preferences to LocalStorage keyed by username
+    const [userWidgets, setUserWidgets] = useState<string[]>(() => {
+        if (!currentUser?.username) return ['staff-performance', 'sla-monitor'];
+        const saved = localStorage.getItem(`unicharm_widgets_${currentUser.username}`);
+        return saved ? JSON.parse(saved) : ['staff-performance', 'sla-monitor'];
+    });
+    const [isAddWidgetOpen, setAddWidgetOpen] = useState(false);
+
+    // Save to LocalStorage whenever widgets change
+    React.useEffect(() => {
+        if (currentUser?.username) {
+            localStorage.setItem(`unicharm_widgets_${currentUser.username}`, JSON.stringify(userWidgets));
+        }
+    }, [userWidgets, currentUser]);
+
+    const handleAddWidget = (widgetId: string) => {
+        if (!userWidgets.includes(widgetId)) {
+            setUserWidgets([...userWidgets, widgetId]);
+        }
+    };
+
+    const handleRemoveWidget = (widgetId: string) => {
+        setUserWidgets(userWidgets.filter(id => id !== widgetId));
+    };
 
     // --- ANALYTICS DATA PREP ---
     const stats = useMemo(() => {
@@ -190,74 +219,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
     // --- VIEW 1: ANALYTICS DASHBOARD (Monitoring) ---
     if (viewMode === 'analytics') {
+        const sortedWidgets = userWidgets
+            .map(id => getWidgetDefinition(id))
+            .filter(w => w !== undefined);
+
         return (
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-6 pb-20">
+                {/* Dashboard Header / Toolbar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Executive Overview</h2>
-                        <p className="text-gray-500 text-sm">Real-time operational insights and performance metrics.</p>
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <Activity className="text-blue-600" /> Operational Overview
+                        </h2>
+                        <p className="text-sm text-slate-500">ServiceNow-style customizable workspace</p>
                     </div>
-                    <button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm transition-all hover:shadow-md font-medium text-sm"
-                    >
-                        <FileSpreadsheet size={16} /> Export Report
-                    </button>
-                </div>
-
-                {/* KPIs */}
-                <div className={`grid grid-cols-1 gap-4 ${isAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                    <div
-                        onClick={() => onNavigate?.('staging')}
-                        className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-bl-full -mr-2 -mt-2"></div>
-                        <div>
-                            <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Total Sheets</p>
-                            <p className="text-3xl font-extrabold text-slate-800">{stats.total}</p>
-                        </div>
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm"><Clipboard size={24} /></div>
-                    </div>
-                    <div
-                        onClick={() => onNavigate?.('loading')}
-                        className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-bl-full -mr-2 -mt-2"></div>
-                        <div>
-                            <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Active Loading</p>
-                            <p className="text-3xl font-extrabold text-slate-800">{stats.locked}</p>
-                        </div>
-                        <div className="p-3 bg-orange-50 text-orange-600 rounded-xl group-hover:bg-orange-600 group-hover:text-white transition-colors shadow-sm"><Truck size={24} /></div>
-                    </div>
-                    <div
-                        onClick={() => onNavigate?.('loading')}
-                        className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/5 rounded-bl-full -mr-2 -mt-2"></div>
-                        <div>
-                            <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Completed</p>
-                            <p className="text-3xl font-extrabold text-slate-800">{stats.completed}</p>
-                        </div>
-                        <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors shadow-sm"><Check size={24} /></div>
-                    </div>
-                    {isAdmin && (
-                        <div
-                            onClick={() => onNavigate?.('admin')}
-                            className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group relative overflow-hidden"
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setAddWidgetOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-lg shadow-blue-200 transition-all hover:scale-105"
                         >
-                            <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-bl-full -mr-2 -mt-2"></div>
-                            <div>
-                                <p className="text-slate-500 text-xs uppercase font-bold tracking-wider mb-1">Pending Users</p>
-                                <p className="text-3xl font-extrabold text-slate-800">{users.filter(u => !u.isApproved).length}</p>
-                            </div>
-                            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors shadow-sm"><UserIcon size={24} /></div>
-                        </div>
-                    )}
+                            <PlusCircle size={16} /> Add Content
+                        </button>
+                        <button
+                            onClick={handleExportExcel}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-lg shadow-green-200 transition-all hover:scale-105"
+                        >
+                            <FileSpreadsheet size={16} /> Export
+                        </button>
+                    </div>
                 </div>
 
-                {/* --- DEPARTMENT OVERVIEWS --- */}
+                {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Existing KPI Cards... keeping them as "Core" for now */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Sheets</p>
+                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.total}</h3>
+                            </div>
+                            <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><FileSpreadsheet size={18} /></div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-orange-300 transition-colors">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Loads</p>
+                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.locked}</h3>
+                            </div>
+                            <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><Truck size={18} /></div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-green-300 transition-colors">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Today</p>
+                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.completedToday}</h3>
+                            </div>
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600"><CheckCircle2 size={18} /></div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Staff Active</p>
+                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.stagingStaff + stats.loadingStaff}</h3>
+                            </div>
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><UserIcon size={18} /></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- DEPARTMENT OVERVIEWS (Role Based) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Staging Overview */}
+                    {/* Staging Overview & Loading Overview Logic Here (Existing Code moved/kept) */}
                     {showStaging && (
                         <div
                             onClick={() => onNavigate?.('staging')}
@@ -314,87 +349,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     )}
                 </div>
 
-                {/* Charts Row 1 */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Trend Chart (Line) */}
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Activity size={18} className="text-blue-500" /> Daily Volume Trend</h3>
-                            <select className="text-xs border-none bg-slate-50 rounded-md px-2 py-1 text-slate-500 cursor-pointer hover:text-slate-800 outline-none">
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                            </select>
-                        </div>
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={stats.lineData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                        itemStyle={{ color: '#1e293b', fontWeight: 600 }}
-                                        cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                                    />
-                                    <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                {/* --- WIDGET GRID (ServiceNow Style) --- */}
+                {sortedWidgets.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {sortedWidgets.map((def, idx) => {
+                            if (!def) return null;
+                            const WidgetComponent = def.component;
+                            // Span full width if defined
+                            const colSpan = def.defaultSize === 'large' || def.defaultSize === 'full' ? 'lg:col-span-2' : '';
 
-                    {/* Operational Status (Pie) */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                        <h3 className="text-lg font-bold mb-2 text-gray-800">Status Distribution</h3>
-                        <div className="h-56 relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={stats.pieData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                        cornerRadius={4}
-                                    >
-                                        {stats.pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-8">
-                                <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total</p>
-                            </div>
-                        </div>
+                            return (
+                                <div key={def.id} className={`bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group hover:shadow-md transition-shadow \${colSpan}`}>
+                                    <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
+                                                {def.title}
+                                            </h3>
+                                            <p className="text-[10px] text-slate-400">{def.description}</p>
+                                        </div>
+                                        <div className="relative">
+                                            <button
+                                                className="text-slate-300 hover:text-slate-600 transition-colors p-1"
+                                                onClick={() => handleRemoveWidget(def.id)}
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <WidgetComponent />
+                                </div>
+                            );
+                        })}
                     </div>
-                </div>
+                )}
 
-                {/* Charts Row 2 */}
-                <div className="grid grid-cols-1 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                        <h3 className="text-lg font-bold mb-6 text-gray-800">Workload Distribution</h3>
-                        <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.barData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                    <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={60}>
-                                        {stats.barData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={index === 0 ? '#22c55e' : index === 1 ? '#f97316' : '#94a3b8'} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
+                {/* Add Widget Modal */}
+                <AddWidgetModal
+                    isOpen={isAddWidgetOpen}
+                    onClose={() => setAddWidgetOpen(false)}
+                    onAdd={handleAddWidget}
+                    activeWidgets={userWidgets}
+                />
             </div>
         );
     }
