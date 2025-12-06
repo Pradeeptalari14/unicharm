@@ -253,6 +253,9 @@ const App = () => {
 
     return (
         <ErrorBoundary>
+            <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-center text-xs font-bold py-1 z-[9999]">
+                DEBUG: v8.5 GRID LAYOUT ACTIVE - HARD REFRESH IF YOU SEE THIS
+            </div>
             <Layout currentPage={currentPage} onNavigate={handleNavigate}>
                 {renderContent()}
             </Layout>
