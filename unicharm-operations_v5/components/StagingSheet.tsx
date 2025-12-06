@@ -460,9 +460,51 @@ export const StagingSheet: React.FC<Props> = ({ existingSheet, onCancel, onLock,
                 </div>
             </div>
 
-            {/* STAGING TABLE (Screen Only - Full Width) */}
-            <div className={`p-6 ${isPreview ? 'hidden' : 'block'} print:hidden`}>
-                <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+            {/* STAGING TABLE (Desktop) & CARDS (Mobile) */}
+            <div className={`p-4 md:p-6 ${isPreview ? 'hidden' : 'block'} print:hidden`}>
+                {/* Mobile Card View (< md) */}
+                <div className="md:hidden space-y-4 mb-4">
+                    {items.map((item, index) => {
+                        // Only show non-empty rows or the first few to avoid clutter
+                        if (!item.skuName && index > 2 && index !== items.length - 1) return null;
+
+                        return (
+                            <div key={item.srNo} className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className="text-xs font-bold text-slate-400">#{item.srNo}</span>
+                                    <span className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded font-bold">Total: {item.ttlCases || 0}</span>
+                                </div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">SKU Name</label>
+                                        <input type="text" value={item.skuName} onChange={e => handleItemChange(index, 'skuName', e.target.value)} disabled={isLocked} className="w-full p-2 border border-slate-200 rounded text-sm outline-none focus:border-blue-500" placeholder="SKU Name" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block text-center">Cs/PLT</label>
+                                            <input type="number" value={item.casesPerPlt} onChange={e => handleItemChange(index, 'casesPerPlt', e.target.value)} disabled={isLocked} className="w-full p-2 border border-slate-200 rounded text-center outline-none focus:border-blue-500" placeholder="0" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block text-center">Full PLT</label>
+                                            <input type="number" value={item.fullPlt} onChange={e => handleItemChange(index, 'fullPlt', e.target.value)} disabled={isLocked} className="w-full p-2 border border-slate-200 rounded text-center outline-none focus:border-blue-500" placeholder="0" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block text-center">Loose</label>
+                                            <input type="number" value={item.loose} onChange={e => handleItemChange(index, 'loose', e.target.value)} disabled={isLocked} className="w-full p-2 border border-slate-200 rounded text-center outline-none focus:border-blue-500" placeholder="0" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    <div className="bg-slate-100 p-4 rounded-lg flex justify-between items-center">
+                        <span className="font-bold text-slate-600 uppercase text-xs">Total Staging Qty</span>
+                        <span className="text-xl font-bold text-blue-600">{totalQty}</span>
+                    </div>
+                </div>
+
+                {/* Desktop Table View (>= md) */}
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                             <tr>
@@ -505,7 +547,7 @@ export const StagingSheet: React.FC<Props> = ({ existingSheet, onCancel, onLock,
 
             {/* Footer Actions - Sticky Bottom */}
             {!isLocked && !isPreview && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] flex justify-center gap-4 z-40 ml-64 print:hidden">
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] flex justify-center gap-4 z-40 ml-0 md:ml-56 print:hidden">
                     <button type="button" onClick={() => handleSave(false)} className="px-6 py-2.5 bg-white text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2 shadow-sm font-medium transition-all text-sm"><Save size={18} /> Save Draft</button>
                     <button type="button" id="lockButton" onClick={(e) => handleSave(true, e)} className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-bold shadow-lg shadow-blue-500/30 transform hover:scale-[1.02] active:scale-[0.98] transition-all text-sm"><Lock size={18} /> Lock & Submit</button>
                 </div>
