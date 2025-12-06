@@ -15,12 +15,13 @@ export enum SheetStatus {
 export interface User {
   id: string;
   username: string;
-  fullName: string; 
+  fullName: string;
   empCode: string; // New Field
   password?: string; // In a real app, never store plain text
   role: Role;
   email?: string;
   isApproved: boolean;
+  isActive?: boolean; // For Deactivate/Archive functionality
 }
 
 export interface StagingItem {
@@ -79,7 +80,7 @@ export interface SheetData {
   id: string;
   status: SheetStatus;
   version: number;
-  
+
   // Header Info
   shift: string;
   date: string;
@@ -96,7 +97,7 @@ export interface SheetData {
   loadingDockNo?: string;
   loadingStartTime?: string;
   loadingEndTime?: string;
-  
+
   // Picking & Logistics Info (Added for Loading Sheet)
   pickingBy?: string;
   pickingCrosscheckedBy?: string;
@@ -107,7 +108,7 @@ export interface SheetData {
 
   loadingItems?: LoadingItemData[];
   additionalItems?: AdditionalItem[];
-  
+
   // Signatures / Auth
   loadingSvName?: string;
   loadingSupervisorSign?: string;
@@ -121,7 +122,7 @@ export interface SheetData {
   lockedAt?: string;
   completedBy?: string;
   completedAt?: string;
-  
+
   capturedImages?: string[]; // Base64 strings
   comments?: Comment[];
   history?: HistoryLog[];
