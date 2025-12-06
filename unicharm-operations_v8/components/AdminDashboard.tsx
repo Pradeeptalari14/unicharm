@@ -829,12 +829,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                     .sort((a, b) => {
                                         if (!sortConfig) return 0;
                                         const { key, direction } = sortConfig;
-                                        const valA = a[key as keyof SheetData] || '';
-                                        const valB = b[key as keyof SheetData] || '';
 
-                                        if (valA < valB) return direction === 'asc' ? -1 : 1;
-                                        if (valA > valB) return direction === 'asc' ? 1 : -1;
-                                        return 0;
+                                        const valA = a[key as keyof SheetData];
+                                        const valB = b[key as keyof SheetData];
+
+                                        // Handle Date Sorting
+                                        if (key === 'date') {
+                                            const timeA = new Date(valA as string).getTime();
+                                            const timeB = new Date(valB as string).getTime();
+                                            // Fallback to string sort if invalid date
+                                            if (!isNaN(timeA) && !isNaN(timeB)) {
+                                                return direction === 'asc' ? timeA - timeB : timeB - timeA;
+                                            }
+                                        }
+
+                                        // Handle String/Numeric Sorting (e.g. IDs)
+                                        const strA = String(valA || '').toLowerCase();
+                                        const strB = String(valB || '').toLowerCase();
+
+                                        // Use localeCompare for natural numeric sort (e.g. Sheet-2 vs Sheet-10)
+                                        const comparison = strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+
+                                        return direction === 'asc' ? comparison : -comparison;
                                     })
                                     .map(s => {
                                         // Duration Calculation Helper
