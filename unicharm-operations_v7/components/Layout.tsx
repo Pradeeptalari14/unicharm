@@ -48,8 +48,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
           setIsMobileMenuOpen(false); // Close menu on mobile nav
         }}
         className={`group w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg mx-2 w-[calc(100%-16px)] ${isActive
-            ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+          ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
           }`}
       >
         <Icon size={20} className={`transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
@@ -172,13 +172,22 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
                 <p className="text-[10px] text-slate-400 truncate capitalize">{currentUser?.role.replace('_', ' ').toLowerCase()}</p>
               </div>
             </div>
-            <button
-              onClick={logout}
-              className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors"
-              title="Sign Out"
-            >
-              <LogOut size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setChangePasswordOpen(true)}
+                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
+                title="Change Password"
+              >
+                <Key size={14} />
+              </button>
+              <button
+                onClick={logout}
+                className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors"
+                title="Sign Out"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
