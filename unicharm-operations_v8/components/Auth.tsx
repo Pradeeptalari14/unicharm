@@ -72,7 +72,7 @@ export const Auth = () => {
     return (
         <div
             className="min-h-screen w-full flex items-center justify-center md:justify-end md:pr-24 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: "url('https://picsum.photos/1920/1080?blur=4')" }}
+            style={{ backgroundImage: "url('/login-bg.png')" }}
         >
             {/* Overlay for better text contrast if image is too bright, optional */}
             <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
