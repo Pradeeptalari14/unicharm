@@ -31,6 +31,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const loadFromStorage = (key: string, defaultData: any) => {
         try {
             const stored = localStorage.getItem(key);
+            console.log(`[Storage] Loading ${key}:`, stored ? 'Found' : 'Using Default');
             return stored ? JSON.parse(stored) : defaultData;
         } catch (e) {
             console.error(`Failed to load ${key}`, e);
