@@ -9,7 +9,7 @@ import {
 import {
     Check, X, Clipboard, Truck, Users as UserIcon, Trash2,
     ShieldAlert, Activity, Search, UserCheck, UserX, UserPlus,
-    Key, Database, FileSpreadsheet, Download, Filter, CheckCircle2
+    Key, Database, FileSpreadsheet, Download, Filter, CheckCircle2, ArrowUpDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { widgetRegistry, getWidgetDefinition } from './widgets/WidgetRegistry';
@@ -58,6 +58,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
         }
     });
     const [isAddWidgetOpen, setAddWidgetOpen] = useState(false);
+
+    // Sort State
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     // Save to LocalStorage whenever widgets change
     React.useEffect(() => {
@@ -794,21 +805,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th className="p-4">Sheet ID</th>
-                                    <th className="p-4">Date</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('id')}>
+                                        <div className="flex items-center gap-1">Sheet ID {sortConfig?.key === 'id' && <ArrowUpDown size={12} className={sortConfig.direction === 'asc' ? 'rotate-180' : ''} />}</div>
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('date')}>
+                                        <div className="flex items-center gap-1">Date {sortConfig?.key === 'date' && <ArrowUpDown size={12} />}</div>
+                                    </th>
                                     <th className="p-4">Dock/Dest</th>
                                     <th className="p-4">Transporter</th>
                                     <th className="p-4">Start</th>
                                     <th className="p-4">End</th>
                                     <th className="p-4">Duration</th>
-                                    <th className="p-4">Status</th>
-                                    <th className="p-4">Supervisor</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
+                                        <div className="flex items-center gap-1">Status {sortConfig?.key === 'status' && <ArrowUpDown size={12} />}</div>
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('supervisorName')}>
+                                        <div className="flex items-center gap-1">Supervisor {sortConfig?.key === 'supervisorName' && <ArrowUpDown size={12} />}</div>
+                                    </th>
                                     <th className="p-4 text-center w-24">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
                                 {sheets
                                     .filter(s => s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()))
+                                    .sort((a, b) => {
+                                        if (!sortConfig) return 0;
+                                        const { key, direction } = sortConfig;
+                                        // @ts-ignore
+                                        const valA = a[key] || '';
+                                        // @ts-ignore
+                                        const valB = b[key] || '';
+
+                                        if (valA < valB) return direction === 'asc' ? -1 : 1;
+                                        if (valA > valB) return direction === 'asc' ? 1 : -1;
+                                        return 0;
+                                    })
                                     .map(s => {
                                         // Duration Calculation Helper
                                         let duration = '-';
