@@ -8,6 +8,7 @@ create table if not exists users (
 );
 -- Allow public access (read/write) for 'free tier' usage without auth
 alter table users enable row level security;
+drop policy if exists "Allow Public Access" on users;
 create policy "Allow Public Access" on users for all using (true) with check (true);
 
 -- 2. SHEETS TABLE
@@ -17,6 +18,7 @@ create table if not exists sheets (
   created_at timestamptz default now()
 );
 alter table sheets enable row level security;
+drop policy if exists "Allow Public Access" on sheets;
 create policy "Allow Public Access" on sheets for all using (true) with check (true);
 
 -- 3. LOGS TABLE
@@ -25,4 +27,5 @@ create table if not exists logs (
   data jsonb not null
 );
 alter table logs enable row level security;
+drop policy if exists "Allow Public Access" on logs;
 create policy "Allow Public Access" on logs for all using (true) with check (true);
