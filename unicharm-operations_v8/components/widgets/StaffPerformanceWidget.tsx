@@ -4,13 +4,24 @@ import { Role, SheetStatus } from '../../types';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 export const StaffPerformanceWidget = () => {
-    const { users, sheets } = useApp();
+    const { users, sheets, currentUser } = useApp();
     const todayStr = new Date().toISOString().split('T')[0];
 
     const staffStats = useMemo(() => {
         return users
-            .filter(u => u.role === Role.STAGING_SUPERVISOR || u.role === Role.LOADING_SUPERVISOR)
-            .filter(u => u.isApproved)
+            .filter(u => {
+                if (!u.isApproved) return false;
+
+                // Role-based visibility
+                if (currentUser?.role === Role.STAGING_SUPERVISOR) {
+                    return u.role === Role.STAGING_SUPERVISOR;
+                }
+                if (currentUser?.role === Role.LOADING_SUPERVISOR) {
+                    return u.role === Role.LOADING_SUPERVISOR;
+                }
+                // Admin sees both
+                return u.role === Role.STAGING_SUPERVISOR || u.role === Role.LOADING_SUPERVISOR;
+            })
             .map(u => {
                 // Completed Today
                 const completedToday = sheets.filter(s =>

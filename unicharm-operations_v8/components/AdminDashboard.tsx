@@ -250,42 +250,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                 </div>
 
                 {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
+                {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {/* Existing KPI Cards... keeping them as "Core" for now */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+                    <div
+                        onClick={() => onNavigate?.('database')}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
+                    >
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Sheets</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-500 transition-colors">Total Sheets</p>
                                 <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.total}</h3>
                             </div>
-                            <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><FileSpreadsheet size={18} /></div>
+                            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><FileSpreadsheet size={18} /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-orange-300 transition-colors">
+                    <div
+                        onClick={() => onNavigate?.('loading')}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-orange-300 transition-colors cursor-pointer hover:shadow-md group"
+                    >
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Loads</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-orange-500 transition-colors">Active Loads</p>
                                 <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.locked}</h3>
                             </div>
-                            <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><Truck size={18} /></div>
+                            <div className="p-2 bg-orange-100 rounded-lg text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors"><Truck size={18} /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-green-300 transition-colors">
+                    <div
+                        onClick={() => onNavigate?.('database')}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-green-300 transition-colors cursor-pointer hover:shadow-md group"
+                    >
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Today</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-green-500 transition-colors">Completed Today</p>
                                 <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.completedToday}</h3>
                             </div>
-                            <div className="p-2 bg-green-100 rounded-lg text-green-600"><CheckCircle2 size={18} /></div>
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors"><CheckCircle2 size={18} /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors">
+                    <div
+                        onClick={() => onNavigate?.('users')}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
+                    >
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Staff Active</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-500 transition-colors">Staff Active</p>
                                 <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.stagingStaff + stats.loadingStaff}</h3>
                             </div>
-                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><UserIcon size={18} /></div>
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors"><UserIcon size={18} /></div>
                         </div>
                     </div>
                 </div>
