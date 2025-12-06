@@ -835,10 +835,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
                                         // Handle Date Sorting
                                         if (key === 'date') {
-                                            const timeA = new Date(valA as string).getTime();
-                                            const timeB = new Date(valB as string).getTime();
-                                            // Fallback to string sort if invalid date
-                                            if (!isNaN(timeA) && !isNaN(timeB)) {
+                                            const parseDate = (d: any) => {
+                                                if (!d) return 0;
+                                                const str = String(d);
+                                                // Try handling DD/MM/YYYY format common in region
+                                                if (str.includes('/')) {
+                                                    const parts = str.split('/');
+                                                    if (parts.length === 3) {
+                                                        // Assume DD/MM/YYYY if day > 12 or if it looks like it
+                                                        // To be safe for sorting mixed data, let's convert to YYYYMMDD string for comparison
+                                                        // If [0] is > 12, it must be DD. If [1] > 12, invalid (or MM is first?).
+                                                        // Let's assume standard local DD/MM/YYYY for strict sort
+                                                        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+                                                    }
+                                                }
+                                                return new Date(str).getTime();
+                                            };
+
+                                            const timeA = parseDate(valA);
+                                            const timeB = parseDate(valB);
+
+                                            // Sort valid dates
+                                            if (!isNaN(timeA) && !isNaN(timeB) && timeA !== 0 && timeB !== 0) {
                                                 return direction === 'asc' ? timeA - timeB : timeB - timeA;
                                             }
                                         }
