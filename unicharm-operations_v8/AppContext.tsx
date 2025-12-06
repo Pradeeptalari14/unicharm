@@ -150,6 +150,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchUsers();
     };
 
+    const deleteUser = async (id: string) => {
+        const userToDelete = users.find(u => u.id === id);
+        if (!userToDelete) return;
+
+        await supabase.from('users').delete().eq('id', id);
+        addLog('USER_DELETE', `User ${userToDelete.username} deleted by admin`);
+        fetchUsers();
+    };
+
     const resetPassword = async (id: string, newPass: string) => {
         const userToUpdate = users.find(u => u.id === id);
         if (!userToUpdate) return;
@@ -238,7 +247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return (
         <AppContext.Provider value={{
             currentUser, users, sheets, notifications, auditLogs, isLoading,
-            login, logout, register, approveUser, resetPassword,
+            login, logout, register, approveUser, deleteUser, resetPassword,
             addSheet, updateSheet, deleteSheet, addComment,
             acquireLock, releaseLock, addNotification, markAllRead
         }}>

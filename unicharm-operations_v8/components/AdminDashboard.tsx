@@ -20,7 +20,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate }) => {
-    const { users, approveUser, sheets, deleteSheet, register, resetPassword, currentUser, isLoading } = useApp();
+    const { users, approveUser, deleteUser, sheets, deleteSheet, register, resetPassword, currentUser, isLoading } = useApp();
     const [searchTerm, setSearchTerm] = useState('');
 
     // Create User State
@@ -69,8 +69,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
             { name: 'Completed', value: completed, color: '#22c55e' }
         ];
 
-        return { total, completed, locked, draft, lineData, barData, pieData };
-    }, [sheets]);
+        // Advanced Stats
+        const todayStr = new Date().toISOString().split('T')[0];
+        const createdToday = sheets.filter(s => s.date === todayStr).length;
+        const completedToday = sheets.filter(s => s.status === SheetStatus.COMPLETED && s.date === todayStr).length;
+
+        const stagingStaff = users.filter(u => u.role === Role.STAGING_SUPERVISOR && u.isApproved).length;
+        const loadingStaff = users.filter(u => u.role === Role.LOADING_SUPERVISOR && u.isApproved).length;
+
+        return { total, completed, locked, draft, lineData, barData, pieData, createdToday, completedToday, stagingStaff, loadingStaff };
+    }, [sheets, users]);
 
     // --- EXCEL EXPORT ---
     const handleExportExcel = () => {
@@ -106,9 +114,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
     const handleDelete = (e: React.MouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
-        const reason = prompt("Enter reason for deletion:");
-        if (reason) {
-            deleteSheet(id, reason);
+        if (confirm("Are you sure you want to delete this sheet?")) {
+            const reason = prompt("Enter reason for deletion:");
+            if (reason) {
+                deleteSheet(id, reason);
+            }
+        }
+    };
+
+    const handleUserDelete = (e: React.MouseEvent, id: string, username: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to permanently delete user "${username}"?`)) {
+            deleteUser(id);
         }
     };
 
@@ -232,6 +250,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     )}
                 </div>
 
+                {/* --- DEPARTMENT OVERVIEWS --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Staging Overview */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Clipboard size={18} /></div>
+                            <h3 className="font-bold text-slate-700">Staging Overview</h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Drafts</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.draft}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">New Today</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.createdToday}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.stagingStaff}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Loading Overview */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Truck size={18} /></div>
+                            <h3 className="font-bold text-slate-700">Loading Overview</h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Active</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.locked}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Done Today</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.completedToday}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.loadingStaff}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Charts Row 1 */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Trend Chart (Line) */}
@@ -349,7 +414,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-lg border border-slate-100">
+                    <div className="overflow-x-auto rounded-lg border border-slate-100">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
@@ -423,6 +488,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                                         >
                                                             <Key size={16} />
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => handleUserDelete(e, user.id, user.username)}
+                                                            className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                                            title="Delete User"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 )}
                                             </td>
@@ -467,6 +539,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                         onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                                     />
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Emp Code</label>
@@ -480,27 +553,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (Opt)</label>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
                                         <input
-                                            type="email"
+                                            type="password"
+                                            required
                                             className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                            placeholder="user@example.com"
-                                            value={newUser.email}
-                                            onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                            placeholder="••••••••"
+                                            value={newUser.password}
+                                            onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                        placeholder="••••••••"
-                                        value={newUser.password}
-                                        onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                                    />
-                                </div>
+
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Role Assignment</label>
                                     <select
@@ -591,7 +655,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             </div>
                         </div>
                     </div>
-                    <div className="overflow-hidden rounded-lg border border-slate-100">
+                    <div className="overflow-x-auto rounded-lg border border-slate-100">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
