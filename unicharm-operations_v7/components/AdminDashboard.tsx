@@ -9,7 +9,7 @@ import {
 import {
     Check, X, Clipboard, Truck, Users as UserIcon, Trash2, ShieldAlert,
     Activity, Search, UserCheck, UserX, UserPlus, Key, Database,
-    LayoutDashboard, Table, Clock, Calendar, ChevronDown, ChevronUp, FileText
+    LayoutDashboard, Table, Clock, Calendar, ChevronDown, ChevronUp, FileText, Download
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -120,6 +120,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
             setResetPasswordOpen(false);
             setResetData(null);
         }
+    };
+
+    // --- EXPORT ---
+    const downloadCSV = () => {
+        const headers = ['Sheet ID', 'Date', 'Shift', 'Destination', 'Status', 'Staging SV', 'Created By', 'Created At', 'Loading SV', 'Loading Start By', 'Loading Start At', 'Vehicle', 'Completed By', 'Completed At', 'Total Duration'];
+        const rows = sheets.map(s => [
+            s.id,
+            s.date,
+            s.shift,
+            s.destination?.replace(/,/g, ' '), // sanitize for CSV
+            s.status,
+            s.supervisorName,
+            s.createdBy,
+            s.createdAt,
+            s.loadingSvName || '-',
+            s.lockedBy || '-',
+            s.lockedAt || '-',
+            s.vehicleNo || '-',
+            s.completedBy || '-',
+            s.completedAt || '-',
+            formatDuration(s.createdAt, s.completedAt)
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + [headers.join(','), ...rows.map(e => e.join(','))].join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `unicharm_operations_data_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     // --- RENDER CONTENT ---
@@ -410,46 +443,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Database className="text-blue-600" /> Database Registry</h2>
                                     <p className="text-sm text-gray-500 mt-1">Full record of all operational sheets.</p>
                                 </div>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                    />
+                                <div className="flex gap-2">
+                                    <button onClick={downloadCSV} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all">
+                                        <Download size={16} /> Export to Excel
+                                    </button>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                        <input
+                                            type="text"
+                                            placeholder="Search..."
+                                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
+                            <div className="overflow-x-auto border rounded-xl border-gray-200">
+                                <table className="w-full text-xs text-left border-collapse">
+                                    <thead className="bg-gray-100 text-gray-700 font-bold uppercase tracking-wider">
                                         <tr>
-                                            <th className="p-4 rounded-tl-lg">ID</th>
-                                            <th className="p-4">Date</th>
-                                            <th className="p-4">Reference</th>
-                                            <th className="p-4">Supervisor</th>
-                                            <th className="p-4">Status</th>
-                                            <th className="p-4 text-center rounded-tr-lg">Action</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">ID</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Date</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Shift</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Ship To</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Status</th>
+                                            <th className="p-3 border border-gray-300 bg-blue-50 text-blue-800">Staging By</th>
+                                            <th className="p-3 border border-gray-300 bg-blue-50 text-blue-800">Started At</th>
+                                            <th className="p-3 border border-gray-300 bg-orange-50 text-orange-800">Loading By</th>
+                                            <th className="p-3 border border-gray-300 bg-orange-50 text-orange-800">Started At</th>
+                                            <th className="p-3 border border-gray-300 bg-green-50 text-green-800">Completed By</th>
+                                            <th className="p-3 border border-gray-300 bg-green-50 text-green-800">Completed At</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50 text-center">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {sheets.filter(s => s.id.includes(searchTerm)).map(s => (
-                                            <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-gray-50 transition cursor-pointer">
-                                                <td className="p-4 font-mono text-blue-600 font-medium">{s.id}</td>
-                                                <td className="p-4 text-gray-600">{s.date}</td>
-                                                <td className="p-4 text-gray-800 font-medium">{s.loadingDockNo || s.destination || '-'}</td>
-                                                <td className="p-4 text-gray-600">{s.supervisorName}</td>
-                                                <td className="p-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold 
-                                                            ${s.status === 'LOCKED' ? 'bg-orange-100 text-orange-700' :
-                                                            s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                                                                'bg-gray-100 text-gray-600'}`}>
+                                    <tbody className="divide-y divide-gray-200 bg-white">
+                                        {sheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                                            <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-blue-50 transition cursor-pointer group">
+                                                <td className="p-2 border border-gray-200 font-mono text-blue-600 font-bold whitespace-nowrap">{s.id}</td>
+                                                <td className="p-2 border border-gray-200 whitespace-nowrap">{s.date}</td>
+                                                <td className="p-2 border border-gray-200 whitespace-nowrap">{s.shift}</td>
+                                                <td className="p-2 border border-gray-200 max-w-[150px] truncate" title={s.destination}>{s.destination}</td>
+                                                <td className="p-2 border border-gray-200 text-center">
+                                                    <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border
+                                                            ${s.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                            s.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                'bg-gray-50 text-gray-600 border-gray-200'}`}>
                                                         {s.status}
                                                     </span>
                                                 </td>
-                                                <td className="p-4 text-center">
-                                                    <button onClick={(e) => { e.stopPropagation(); deleteSheet(s.id, 'Admin Delete'); }} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={16} /></button>
+                                                {/* Staging Info */}
+                                                <td className="p-2 border border-gray-200">
+                                                    <div className="font-semibold">{s.supervisorName}</div>
+                                                    <div className="text-[10px] text-gray-500">{s.createdBy}</div>
+                                                </td>
+                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.createdAt)}</td>
+
+                                                {/* Loading Info */}
+                                                <td className="p-2 border border-gray-200">
+                                                    <div className="font-semibold">{s.loadingSvName || '-'}</div>
+                                                    {s.lockedBy && <div className="text-[10px] text-gray-500">{s.lockedBy}</div>}
+                                                </td>
+                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.lockedAt)}</td>
+
+                                                {/* Completion Info */}
+                                                <td className="p-2 border border-gray-200 font-semibold">{s.completedBy || '-'}</td>
+                                                <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.completedAt)}</td>
+
+                                                <td className="p-2 border border-gray-200 text-center">
+                                                    <button onClick={(e) => { e.stopPropagation(); deleteSheet(s.id, 'Admin Delete'); }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
                                                 </td>
                                             </tr>
                                         ))}
