@@ -568,18 +568,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('username')}>
-                                        <div className="flex items-center gap-1">User {sortConfig?.key === 'username' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-2">
+                                        <button
+                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            onClick={() => handleSort('username')}
+                                        >
+                                            User {sortConfig?.key === 'username' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('fullName')}>
-                                        <div className="flex items-center gap-1">Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-2">
+                                        <button
+                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            onClick={() => handleSort('fullName')}
+                                        >
+                                            Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('role')}>
-                                        <div className="flex items-center gap-1">Role {sortConfig?.key === 'role' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-2">
+                                        <button
+                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            onClick={() => handleSort('role')}
+                                        >
+                                            Role {sortConfig?.key === 'role' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                        </button>
                                     </th>
                                     <th className="p-4">Email</th>
-                                    <th className="p-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('isApproved')}>
-                                        <div className="flex items-center justify-center gap-1">Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-2 text-center">
+                                        <button
+                                            className="w-full h-full flex items-center justify-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer font-bold"
+                                            onClick={() => handleSort('isApproved')}
+                                        >
+                                            Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                        </button>
                                     </th>
                                     <th className="p-4 text-center w-40">Actions</th>
                                 </tr>
