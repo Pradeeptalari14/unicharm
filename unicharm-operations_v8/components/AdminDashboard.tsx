@@ -7,9 +7,10 @@ import {
     PieChart, Pie, Cell, LineChart, Line, CartesianGrid
 } from 'recharts';
 import {
-    Check, X, Clipboard, Truck, Users as UserIcon, Trash2,
-    ShieldAlert, Activity, Search, UserCheck, UserX, UserPlus,
-    Key, Database, FileSpreadsheet, Download, Filter, CheckCircle2, ArrowUpDown
+    Check, X, Clipboard, Truck, Users as UserIcon, Trash2, Database,
+    FileText, Search, Plus, ArrowUpDown, Download, Printer, Lock, Edit3, Eye, ShieldAlert,
+    CheckCircle, XCircle, Key, UserPlus, Activity,
+    FileSpreadsheet, Filter, CheckCircle2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { widgetRegistry, getWidgetDefinition } from './widgets/WidgetRegistry';
@@ -507,7 +508,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <UserIcon className="text-blue-600" /> User Administration <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full ml-2">v8.4 (UI Fix)</span>
+                                <UserIcon className="text-blue-600" /> User Administration <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full ml-2">v8.5 (Grid Layout)</span>
                             </h2>
                             <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
@@ -564,262 +565,226 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-slate-100">
-                        <table className="w-full text-sm text-left">
-                            <thead style={{ backgroundColor: '#0f172a', color: '#ffffff' }} className="uppercase text-xs font-bold">
-                                <tr>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('username')}
-                                        >
-                                            User
-                                            <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'username' ? 1 : 0.3, color: sortConfig?.key === 'username' ? '#60a5fa' : 'white' }} />
-                                        </button>
-                                    </th>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('fullName')}
-                                        >
-                                            Full Name
-                                            <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'fullName' ? 1 : 0.3, color: sortConfig?.key === 'fullName' ? '#60a5fa' : 'white' }} />
-                                        </button>
-                                    </th>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('role')}
-                                        >
-                                            Role
-                                            <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'role' ? 1 : 0.3, color: sortConfig?.key === 'role' ? '#60a5fa' : 'white' }} />
-                                        </button>
-                                    </th>
-                                    <th className="p-4" style={{ color: 'white' }}>Email</th>
-                                    <th className="p-0 text-center">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white' }}
-                                            onClick={() => handleSort('isApproved')}
-                                        >
-                                            Status
-                                            <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'isApproved' ? 1 : 0.3, color: sortConfig?.key === 'isApproved' ? '#60a5fa' : 'white' }} />
-                                        </button>
-                                    </th>
-                                    <th className="p-4 text-center w-40" style={{ color: 'white' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                {filteredUsers.map(user => (
-                                    <tr key={user.id} className={`hover:bg-slate-50 transition group ${!user.isApproved ? 'bg-orange-50/30' : ''}`}>
-                                        <td className="p-4 font-medium text-slate-900 flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                                                {user.username.charAt(0).toUpperCase()}
-                                            </div>
-                                            {user.username}
-                                        </td>
-                                        <td className="p-4 text-slate-700">{user.fullName || '-'}</td>
-                                        <td className="p-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider
-                                        ${user.role === Role.ADMIN ? 'bg-purple-100 text-purple-700' :
-                                                    user.role === Role.LOADING_SUPERVISOR ? 'bg-orange-100 text-orange-700' :
-                                                        user.role === Role.STAGING_SUPERVISOR ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-slate-100 text-slate-600'
-                                                }`}>
-                                                {user.role === Role.LOADING_SUPERVISOR && <Truck size={12} />}
+                    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm bg-white">
+                        {/* Grid Header */}
+                        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1.5fr_1fr_120px] bg-slate-800 text-white font-bold text-xs uppercase divide-x divide-slate-700">
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('username')}
+                            >
+                                User <ArrowUpDown size={14} className={sortConfig?.key === 'username' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('fullName')}
+                            >
+                                Full Name <ArrowUpDown size={14} className={sortConfig?.key === 'fullName' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('role')}
+                            >
+                                Role <ArrowUpDown size={14} className={sortConfig?.key === 'role' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div className="p-4 flex items-center text-gray-300">
+                                Email
+                            </div>
+                            <div
+                                className="p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('isApproved')}
+                            >
+                                Status <ArrowUpDown size={14} className={sortConfig?.key === 'isApproved' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div className="p-4 flex items-center justify-center text-gray-300">
+                                Actions
+                            </div>
+                        </div>
+
+                        {/* Grid Body */}
+                        <div className="divide-y divide-slate-100">
+                            {filteredUsers.length > 0 ? (
+                                filteredUsers.map((user) => (
+                                    <div key={user.id} className="grid grid-cols-[1.5fr_1.5fr_1fr_1.5fr_1fr_120px] hover:bg-slate-50 transition-colors items-center text-sm text-slate-700">
+                                        <div className="p-4 font-bold text-slate-800">{user.username}</div>
+                                        <div className="p-4">
+                                            <div className="font-medium">{user.fullName}</div>
+                                            <div className="text-xs text-slate-400">{user.empCode || 'N/A'}</div>
+                                        </div>
+                                        <div className="p-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold
+                                                ${user.role === Role.ADMIN ? 'bg-purple-100 text-purple-700' :
+                                                    user.role === Role.STAGING_SUPERVISOR ? 'bg-blue-100 text-blue-700' :
+                                                        user.role === Role.LOADING_SUPERVISOR ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-slate-100 text-slate-600'}`}>
                                                 {user.role === Role.STAGING_SUPERVISOR && <Clipboard size={12} />}
+                                                {user.role === Role.LOADING_SUPERVISOR && <Truck size={12} />}
                                                 {user.role === Role.ADMIN && <ShieldAlert size={12} />}
-                                                {user.role.replace('_', ' ')}
+                                                {user.role}
                                             </span>
-                                        </td>
-                                        <td className="p-4 text-slate-500 text-xs">{user.email || 'N/A'}</td>
-                                        <td className="p-4 text-center">
-                                            {user.isApproved ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
-                                                    <ShieldAlert size={12} /> Pending Approval
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="p-4 text-center">
+                                        </div>
+                                        <div className="p-4 text-slate-500 truncate" title={user.email}>{user.email || '-'}</div>
+                                        <div className="p-4 flex justify-center">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold
+                                                ${user.isApproved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {user.isApproved ? 'Active' : 'Pending'}
+                                            </span>
+                                        </div>
+                                        <div className="p-4 flex justify-center gap-2">
                                             {!user.isApproved ? (
-                                                <div className="flex justify-center gap-2">
-                                                    <button
-                                                        onClick={(e) => handleApprove(e, user.id)}
-                                                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
-                                                        title="Approve User"
-                                                    >
-                                                        Approve
+                                                <>
+                                                    <button onClick={(e) => handleApprove(e, user.id)} className="text-green-600 hover:bg-green-100 p-1.5 rounded" title="Approve">
+                                                        <CheckCircle size={16} />
                                                     </button>
-                                                    <button
-                                                        onClick={(e) => handleReject(e, user.id)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
-                                                        title="Reject User"
-                                                    >
-                                                        Reject
+                                                    <button onClick={(e) => handleReject(e, user.id)} className="text-red-600 hover:bg-red-100 p-1.5 rounded" title="Reject">
+                                                        <XCircle size={16} />
                                                     </button>
-                                                </div>
+                                                </>
                                             ) : (
-                                                <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {user.id === currentUser?.id && (
-                                                        <button
-                                                            onClick={(e) => openResetPassword(e, user)}
-                                                            className="text-slate-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                                                            title="Reset Password"
-                                                        >
+                                                <>
+                                                    {user.id === currentUser?.id && ( // Replaced userIdMatches with direct comparison
+                                                        <button onClick={(e) => openResetPassword(e, user)} className="text-blue-600 hover:bg-blue-100 p-1.5 rounded" title="Change My Password">
                                                             <Key size={16} />
                                                         </button>
                                                     )}
                                                     {currentUser?.role === Role.ADMIN && (
-                                                        <button
-                                                            onClick={(e) => handleUserDelete(e, user.id, user.username)}
-                                                            className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
-                                                            title="Delete User"
-                                                        >
+                                                        <button onClick={(e) => handleUserDelete(e, user.id, user.username)} className="text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete User">
                                                             <Trash2 size={16} />
                                                         </button>
                                                     )}
-                                                </div>
+                                                </>
                                             )}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredUsers.length === 0 && (
-                                    <tr><td colSpan={6} className="p-12 text-center text-slate-400 italic">No users found matching your search.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-12 text-center text-slate-400 italic">No users found matching your search.</div>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Create User Modal */}
-                {isCreateUserOpen && (
-                    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
-                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><UserPlus size={20} className="text-blue-600" /> Create New User</h3>
-                                <button onClick={() => setCreateUserOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full p-1 hover:bg-slate-200"><X size={20} /></button>
-                            </div>
-                            <form onSubmit={handleCreateUserSubmit} className="p-6 space-y-5">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Username</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                        placeholder="jdoe"
-                                        value={newUser.username}
-                                        onChange={e => setNewUser({ ...newUser, username: e.target.value })}
-                                    />
+                    {/* Create User Modal */}
+                    {isCreateUserOpen && (
+                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+                                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2"><UserPlus size={20} className="text-blue-600" /> Create New User</h3>
+                                    <button onClick={() => setCreateUserOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full p-1 hover:bg-slate-200"><X size={20} /></button>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                        placeholder="John Doe"
-                                        value={newUser.fullName}
-                                        onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (Optional)</label>
-                                    <input
-                                        type="email"
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                        placeholder="john@example.com"
-                                        value={newUser.email || ''}
-                                        onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
+                                <form onSubmit={handleCreateUserSubmit} className="p-6 space-y-5">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Emp Code</label>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Username</label>
                                         <input
                                             type="text"
                                             required
                                             className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                            placeholder="E12345"
-                                            value={newUser.empCode}
-                                            onChange={e => setNewUser({ ...newUser, empCode: e.target.value })}
+                                            placeholder="jdoe"
+                                            value={newUser.username}
+                                            onChange={e => setNewUser({ ...newUser, username: e.target.value })}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
                                         <input
-                                            type="password"
+                                            type="text"
                                             required
                                             className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                                            placeholder="••••••••"
-                                            value={newUser.password}
-                                            onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                            placeholder="John Doe"
+                                            value={newUser.fullName}
+                                            onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                                         />
                                     </div>
-                                </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (Optional)</label>
+                                        <input
+                                            type="email"
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                            placeholder="john@example.com"
+                                            value={newUser.email || ''}
+                                            onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Role Assignment</label>
-                                    <select
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 bg-white transition-all cursor-pointer"
-                                        value={newUser.role}
-                                        onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}
-                                    >
-                                        <option value={Role.STAGING_SUPERVISOR}>Staging Supervisor</option>
-                                        <option value={Role.LOADING_SUPERVISOR}>Loading Supervisor</option>
-                                        <option value={Role.ADMIN}>Administrator</option>
-                                        <option value={Role.VIEWER}>Viewer</option>
-                                    </select>
-                                </div>
-                                <div className="pt-4">
-                                    <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">
-                                        Create User
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Emp Code</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                                placeholder="E12345"
+                                                value={newUser.empCode}
+                                                onChange={e => setNewUser({ ...newUser, empCode: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                                            <input
+                                                type="password"
+                                                required
+                                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                                placeholder="••••••••"
+                                                value={newUser.password}
+                                                onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
 
-                {/* Reset Password Modal (Admin) */}
-                {isResetPasswordOpen && resetData && (
-                    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
-                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><Key size={20} className="text-orange-600" /> Reset Password</h3>
-                                <button onClick={() => setResetPasswordOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full p-1 hover:bg-slate-200"><X size={20} /></button>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Role Assignment</label>
+                                        <select
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 bg-white transition-all cursor-pointer"
+                                            value={newUser.role}
+                                            onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}
+                                        >
+                                            <option value={Role.STAGING_SUPERVISOR}>Staging Supervisor</option>
+                                            <option value={Role.LOADING_SUPERVISOR}>Loading Supervisor</option>
+                                            <option value={Role.ADMIN}>Administrator</option>
+                                            <option value={Role.VIEWER}>Viewer</option>
+                                        </select>
+                                    </div>
+                                    <div className="pt-4">
+                                        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">
+                                            Create User
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-5">
-                                <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
-                                    <p className="text-sm text-orange-800">Resetting password for: <span className="font-bold">{resetData.username}</span></p>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Password</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono"
-                                        placeholder="Enter new password"
-                                        value={resetData.newPass}
-                                        onChange={e => setResetData({ ...resetData, newPass: e.target.value })}
-                                    />
-                                </div>
-                                <div className="pt-2">
-                                    <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98]">
-                                        Update Password
-                                    </button>
-                                </div>
-                            </form>
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {/* Reset Password Modal (Admin) */}
+                    {isResetPasswordOpen && resetData && (
+                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
+                                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2"><Key size={20} className="text-orange-600" /> Reset Password</h3>
+                                    <button onClick={() => setResetPasswordOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full p-1 hover:bg-slate-200"><X size={20} /></button>
+                                </div>
+                                <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-5">
+                                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                                        <p className="text-sm text-orange-800">Resetting password for: <span className="font-bold">{resetData.username}</span></p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Password</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all font-mono"
+                                            placeholder="Enter new password"
+                                            value={resetData.newPass}
+                                            onChange={e => setResetData({ ...resetData, newPass: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="pt-2">
+                                        <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98]">
+                                            Update Password
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -855,157 +820,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             </div>
                         </div>
                     </div>
-                    <div className="overflow-x-auto rounded-lg border border-slate-100">
-                        <table className="w-full text-sm text-left">
-                            <thead style={{ backgroundColor: '#0f172a', color: '#ffffff' }} className="uppercase text-xs font-bold">
-                                <tr>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('id')}
-                                        >
-                                            Sheet ID
-                                            {sortConfig?.key === 'id' && <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'id' ? 1 : 0.3, color: sortConfig?.key === 'id' ? '#60a5fa' : 'white' }} />}
-                                        </button>
-                                    </th>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('date')}
-                                        >
-                                            Date
-                                            {sortConfig?.key === 'date' && <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'date' ? 1 : 0.3, color: sortConfig?.key === 'date' ? '#60a5fa' : 'white' }} />}
-                                        </button>
-                                    </th>
-                                    <th className="p-4" style={{ color: 'white' }}>Dock/Dest</th>
-                                    <th className="p-4" style={{ color: 'white' }}>Transporter</th>
-                                    <th className="p-4" style={{ color: 'white' }}>Start</th>
-                                    <th className="p-4" style={{ color: 'white' }}>End</th>
-                                    <th className="p-4" style={{ color: 'white' }}>Duration</th>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('status')}
-                                        >
-                                            Status
-                                            {sortConfig?.key === 'status' && <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'status' ? 1 : 0.3, color: sortConfig?.key === 'status' ? '#60a5fa' : 'white' }} />}
-                                        </button>
-                                    </th>
-                                    <th className="p-0">
-                                        <button
-                                            type="button"
-                                            style={{ width: '100%', height: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'transparent', border: 'none', color: 'white', textAlign: 'left' }}
-                                            onClick={() => handleSort('supervisorName')}
-                                        >
-                                            Supervisor
-                                            {sortConfig?.key === 'supervisorName' && <ArrowUpDown size={14} style={{ opacity: sortConfig?.key === 'supervisorName' ? 1 : 0.3, color: sortConfig?.key === 'supervisorName' ? '#60a5fa' : 'white' }} />}
-                                        </button>
-                                    </th>
-                                    <th className="p-4 text-center w-24" style={{ color: 'white' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                {sheets
-                                    .filter(s => s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()))
-                                    .sort((a, b) => {
-                                        if (!sortConfig) return 0;
-                                        const { key, direction } = sortConfig;
+                    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm bg-white">
+                        {/* Grid Header */}
+                        <div className="grid grid-cols-[1.2fr_1.2fr_1fr_1fr_0.8fr_0.8fr_0.8fr_1fr_1.2fr_100px] bg-slate-800 text-white font-bold text-xs uppercase divide-x divide-slate-700">
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('id')}
+                            >
+                                Sheet ID <ArrowUpDown size={14} className={sortConfig?.key === 'id' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('date')}
+                            >
+                                Date <ArrowUpDown size={14} className={sortConfig?.key === 'date' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div className="p-4 flex items-center text-gray-300">Dock/Dest</div>
+                            <div className="p-4 flex items-center text-gray-300">Transporter</div>
+                            <div className="p-4 flex items-center text-gray-300">Start</div>
+                            <div className="p-4 flex items-center text-gray-300">End</div>
+                            <div className="p-4 flex items-center text-gray-300">Duration</div>
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('status')}
+                            >
+                                Status <ArrowUpDown size={14} className={sortConfig?.key === 'status' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div
+                                className="p-4 flex items-center gap-2 cursor-pointer hover:bg-slate-700 transition-colors"
+                                onClick={() => handleSort('supervisorName')}
+                            >
+                                Supervisor <ArrowUpDown size={14} className={sortConfig?.key === 'supervisorName' ? 'text-blue-400 opacity-100' : 'text-white opacity-30'} />
+                            </div>
+                            <div className="p-4 flex items-center justify-center text-gray-300">Actions</div>
+                        </div>
 
-                                        const valA = a[key as keyof SheetData];
-                                        const valB = b[key as keyof SheetData];
+                        {/* Grid Body */}
+                        <div className="divide-y divide-slate-100">
+                            {sheets
+                                .filter(s => s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .sort((a, b) => {
+                                    if (!sortConfig) return 0;
+                                    const { key, direction } = sortConfig;
+                                    const valA = a[key as keyof SheetData];
+                                    const valB = b[key as keyof SheetData];
 
-                                        // Handle Date Sorting
-                                        if (key === 'date') {
-                                            const parseDate = (d: any) => {
-                                                if (!d) return 0;
-                                                const str = String(d);
-                                                // Try handling DD/MM/YYYY format common in region
-                                                if (str.includes('/')) {
-                                                    const parts = str.split('/');
-                                                    if (parts.length === 3) {
-                                                        // Assume DD/MM/YYYY if day > 12 or if it looks like it
-                                                        // To be safe for sorting mixed data, let's convert to YYYYMMDD string for comparison
-                                                        // If [0] is > 12, it must be DD. If [1] > 12, invalid (or MM is first?).
-                                                        // Let's assume standard local DD/MM/YYYY for strict sort
-                                                        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-                                                    }
-                                                }
-                                                return new Date(str).getTime();
-                                            };
-
-                                            const timeA = parseDate(valA);
-                                            const timeB = parseDate(valB);
-
-                                            // Sort valid dates
-                                            if (!isNaN(timeA) && !isNaN(timeB) && timeA !== 0 && timeB !== 0) {
-                                                return direction === 'asc' ? timeA - timeB : timeB - timeA;
+                                    if (key === 'date') {
+                                        const parseDate = (d: any) => {
+                                            if (!d) return 0;
+                                            const str = String(d);
+                                            if (str.includes('/')) {
+                                                const parts = str.split('/');
+                                                if (parts.length === 3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
                                             }
+                                            return new Date(str).getTime();
+                                        };
+                                        const timeA = parseDate(valA);
+                                        const timeB = parseDate(valB);
+                                        return direction === 'asc' ? timeA - timeB : timeB - timeA;
+                                    }
+
+                                    const strA = String(valA || '').toLowerCase();
+                                    const strB = String(valB || '').toLowerCase();
+                                    const comparison = strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+                                    return direction === 'asc' ? comparison : -comparison;
+                                })
+                                .map((s) => {
+                                    // Calculate Duration
+                                    let duration = '-';
+                                    if (s.loadingStartTime && s.loadingEndTime) {
+                                        const start = new Date(`1970-01-01T${s.loadingStartTime}`);
+                                        const end = new Date(`1970-01-01T${s.loadingEndTime}`);
+                                        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                            let diff = (end.getTime() - start.getTime()) / 60000;
+                                            if (diff < 0) diff += 24 * 60;
+                                            const hrs = Math.floor(diff / 60);
+                                            const mins = Math.floor(diff % 60);
+                                            duration = `${hrs}h ${mins}m`;
                                         }
+                                    }
 
-                                        // Handle String/Numeric Sorting (e.g. IDs)
-                                        const strA = String(valA || '').toLowerCase();
-                                        const strB = String(valB || '').toLowerCase();
-
-                                        // Use localeCompare for natural numeric sort (e.g. Sheet-2 vs Sheet-10)
-                                        const comparison = strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
-
-                                        return direction === 'asc' ? comparison : -comparison;
-                                    })
-                                    .map(s => {
-                                        // Duration Calculation Helper
-                                        let duration = '-';
-                                        if (s.loadingStartTime && s.loadingEndTime) {
-                                            const start = new Date(`1970-01-01T${s.loadingStartTime}`);
-                                            const end = new Date(`1970-01-01T${s.loadingEndTime}`);
-                                            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-                                                const diffMs = end.getTime() - start.getTime();
-                                                const diffMins = Math.round(diffMs / 60000);
-                                                if (diffMins >= 0) {
-                                                    const hrs = Math.floor(diffMins / 60);
-                                                    const mins = diffMins % 60;
-                                                    duration = `${hrs}h ${mins}m`;
-                                                }
-                                            }
-                                        }
-
-                                        return (
-                                            <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-slate-50 transition cursor-pointer group">
-                                                <td className="p-4 font-mono font-medium text-blue-600 group-hover:underline decoration-blue-200 underline-offset-4">{s.id}</td>
-                                                <td className="p-4 text-slate-500">{s.date}</td>
-                                                <td className="p-4 text-slate-700 font-medium">{s.loadingDockNo} / {s.destination}</td>
-                                                <td className="p-4 text-slate-500">{s.transporter || '-'}</td>
-                                                <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingStartTime || '-'}</td>
-                                                <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingEndTime || '-'}</td>
-                                                <td className="p-4 text-slate-800 font-bold text-xs">{duration}</td>
-                                                <td className="p-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide
-                                        ${s.status === 'LOCKED' ? 'bg-orange-100 text-orange-700' :
+                                    return (
+                                        <div key={s.id} onClick={() => onViewSheet(s)} className="grid grid-cols-[1.2fr_1.2fr_1fr_1fr_0.8fr_0.8fr_0.8fr_1fr_1.2fr_100px] hover:bg-slate-50 transition-colors items-center text-sm text-slate-700 group cursor-pointer">
+                                            <div className="p-4 font-mono font-medium text-blue-600 group-hover:underline decoration-blue-200 underline-offset-4">{s.id}</div>
+                                            <div className="p-4 text-slate-600">{s.date}</div>
+                                            <div className="p-4 text-slate-600 truncate" title={s.loadingDockNo || s.destination}>{s.loadingDockNo || s.destination || '-'}</div>
+                                            <div className="p-4 text-slate-600 truncate" title={s.transporter}>{s.transporter || '-'}</div>
+                                            <div className="p-4 text-slate-500 font-mono text-xs">{s.loadingStartTime || '-'}</div>
+                                            <div className="p-4 text-slate-500 font-mono text-xs">{s.loadingEndTime || '-'}</div>
+                                            <div className="p-4 text-slate-800 font-medium">{duration}</div>
+                                            <div className="p-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
+                                                        ${s.status === 'DRAFT' ? 'bg-slate-100 text-slate-600' :
+                                                        s.status === 'LOCKED' ? 'bg-orange-100 text-orange-600' :
                                                             s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
                                                                 'bg-slate-100 text-slate-600'}`}>
-                                                        {s.status}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-slate-700">{s.supervisorName}</td>
-                                                <td className="p-4 text-center">
-                                                    <button
-                                                        onClick={(e) => handleDelete(e, s.id)}
-                                                        className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                        title="Delete Sheet"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                {sheets.length === 0 && (
-                                    <tr><td colSpan={7} className="p-12 text-center text-slate-400 italic">No records found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                                                    {s.status}
+                                                </span>
+                                            </div>
+                                            <div className="p-4 text-slate-700 truncate" title={s.supervisorName}>{s.supervisorName}</div>
+                                            <div className="p-4 flex justify-center">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(e, s.id); }}
+                                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                    title="Delete Sheet"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            }
+                            {sheets.length === 0 && (
+                                <div className="p-12 text-center text-slate-400 italic">No records found.</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
