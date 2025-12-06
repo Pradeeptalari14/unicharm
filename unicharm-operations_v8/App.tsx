@@ -26,8 +26,18 @@ const App = () => {
     // Helper to get the actual up-to-date sheet object from global state
     const activeSheet = selectedSheetId ? sheets.find(s => s.id === selectedSheetId) : null;
 
+    const [initialSearch, setInitialSearch] = useState('');
+
     const handleNavigate = (page: string) => {
-        setCurrentPage(page);
+        // Handle Role-Based Filter Navigation (e.g. 'admin_STAGING_SUPERVISOR')
+        if (page.startsWith('admin_')) {
+            const roleFilter = page.replace('admin_', '').replace('_SUPERVISOR', ' SUPERVISOR'); // "STAGING SUPERVISOR"
+            setInitialSearch(roleFilter);
+            setCurrentPage('admin');
+        } else {
+            setInitialSearch('');
+            setCurrentPage(page);
+        }
         setSelectedSheetId(null);
         setIsCreatingNew(false);
         setIsEditing(false);
@@ -77,7 +87,7 @@ const App = () => {
                 return <AdminDashboard viewMode="analytics" onViewSheet={(s) => handleViewSheet(s)} onNavigate={handleNavigate} />;
 
             case 'admin':
-                return <AdminDashboard viewMode="users" onViewSheet={(s) => handleViewSheet(s)} />;
+                return <AdminDashboard viewMode="users" onViewSheet={(s) => handleViewSheet(s)} initialSearch={initialSearch} />;
 
             case 'database':
                 return <AdminDashboard viewMode="database" onViewSheet={(s) => handleViewSheet(s)} />;

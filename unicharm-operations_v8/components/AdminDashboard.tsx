@@ -20,14 +20,15 @@ interface AdminDashboardProps {
     viewMode: 'analytics' | 'users' | 'database';
     onViewSheet: (sheet: SheetData) => void;
     onNavigate?: (page: string) => void;
+    initialSearch?: string;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate, initialSearch = '' }) => {
     const { users, approveUser, deleteUser, sheets, deleteSheet, register, resetPassword, currentUser, isLoading } = useApp();
 
     console.log("AdminDashboard Rendering. View:", viewMode, "User:", currentUser?.username, "Loading:", isLoading);
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(initialSearch);
 
     // Create User State
     const [isCreateUserOpen, setCreateUserOpen] = useState(false);
@@ -290,7 +291,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         </div>
                     </div>
                     <div
-                        onClick={() => onNavigate?.('users')}
+                        onClick={() => onNavigate?.('admin')}
                         className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
                     >
                         <div className="flex justify-between items-start">
@@ -327,7 +328,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                 </div>
                                 <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
                                     <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
-                                    <p className="text-xl font-bold text-slate-800">{stats.stagingStaff}</p>
+                                    <p
+                                        className="text-xl font-bold text-slate-800 cursor-pointer hover:text-blue-600 hover:underline"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigate?.('admin_STAGING_SUPERVISOR');
+                                        }}
+                                    >
+                                        {stats.stagingStaff}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -355,7 +364,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                 </div>
                                 <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
                                     <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
-                                    <p className="text-xl font-bold text-slate-800">{stats.loadingStaff}</p>
+                                    <p
+                                        className="text-xl font-bold text-slate-800 cursor-pointer hover:text-orange-600 hover:underline"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigate?.('admin_LOADING_SUPERVISOR');
+                                        }}
+                                    >
+                                        {stats.loadingStaff}
+                                    </p>
                                 </div>
                             </div>
                         </div>
