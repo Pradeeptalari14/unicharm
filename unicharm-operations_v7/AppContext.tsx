@@ -14,6 +14,8 @@ interface AppContextType {
     logout: () => void;
     register: (user: User) => void;
     approveUser: (id: string, approve: boolean) => void;
+    deleteUser: (id: string) => void;
+    toggleUserActive: (id: string, isActive: boolean) => void;
     resetPassword: (id: string, newPass: string) => void;
     addSheet: (sheet: SheetData) => void;
     updateSheet: (sheet: SheetData) => void;
@@ -98,6 +100,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (error) console.error("Error deleting sheet:", error);
     };
 
+    const deleteUserFromSupabase = async (id: string) => {
+        const { error } = await supabase.from('users').delete().eq('id', id);
+        if (error) console.error("Error deleting user:", error);
+    };
+
     const saveLogToSupabase = async (log: any) => {
         const { error } = await supabase.from('logs').insert({ id: log.id, data: log });
         if (error) console.error("Error saving log:", error);
@@ -122,6 +129,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const user = users.find(u => u.username === username && u.password === pass && u.role === role);
         if (user) {
             if (!user.isApproved) return false;
+            // Check isActive (default true if undefined)
+            if (user.isActive === false) return false;
+
             setCurrentUser(user);
             addLog('LOGIN', `User ${username} logged in`);
             return true;
@@ -135,9 +145,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const register = (user: User) => {
+        // Ensure new users are active by default
+        const userWithStatus = { ...user, isActive: true };
         setUsers(prev => {
-            const newState = [...prev, user];
-            saveUserToSupabase(user);
+            const newState = [...prev, userWithStatus];
+            saveUserToSupabase(userWithStatus);
             return newState;
         });
         addNotification(`New user registration: ${user.username}`);
@@ -170,6 +182,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
             addLog('USER_REJECT', `User ID ${id} rejected`);
         }
+    };
+
+    const deleteUser = (id: string) => {
+        setUsers(prev => prev.filter(u => u.id !== id));
+        deleteUserFromSupabase(id);
+        addLog('USER_DELETE', `User ID ${id} deleted`);
+    };
+
+    const toggleUserActive = (id: string, isActive: boolean) => {
+        setUsers(prev => {
+            const newState = prev.map(u => {
+                if (u.id === id) {
+                    const updated = { ...u, isActive };
+                    saveUserToSupabase(updated);
+                    return updated;
+                }
+                return u;
+            });
+            return newState;
+        });
+        addLog('USER_STATUS_CHANGE', `User ID ${id} status changed to ${isActive ? 'Active' : 'Inactive'}`);
     };
 
     const resetPassword = (id: string, newPass: string) => {
@@ -288,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return (
         <AppContext.Provider value={{
             currentUser, users, sheets, notifications, auditLogs,
-            login, logout, register, approveUser, resetPassword,
+            login, logout, register, approveUser, deleteUser, toggleUserActive, resetPassword,
             addSheet, updateSheet, deleteSheet, addComment,
             acquireLock, releaseLock, addNotification, markAllRead
         }}>

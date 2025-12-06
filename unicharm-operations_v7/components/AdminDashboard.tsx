@@ -1,509 +1,668 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../AppContext';
 import { Role, SheetStatus, SheetData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Check, X, Clipboard, Truck, Users as UserIcon, Trash2, ShieldAlert, Activity, Search, UserCheck, UserX, UserPlus, Key, Database } from 'lucide-react';
+import {
+    BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
+    PieChart, Pie, Cell, AreaChart, Area, CartesianGrid
+} from 'recharts';
+import {
+    Check, X, Clipboard, Truck, Users as UserIcon, Trash2, ShieldAlert,
+    Activity, Search, UserCheck, UserX, UserPlus, Key, Database,
+    LayoutDashboard, Table, Clock, Calendar, ChevronDown, ChevronUp, FileText, Download
+} from 'lucide-react';
 
 interface AdminDashboardProps {
-    viewMode: 'analytics' | 'users' | 'database';
+    viewMode: 'analytics' | 'users' | 'database'; // Maintained for prop compatibility, but internal state handles tabs now
     onViewSheet: (sheet: SheetData) => void;
     onNavigate?: (page: string) => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate }) => {
-  const { users, approveUser, sheets, auditLogs, deleteSheet, register, resetPassword, currentUser } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
+// Helper to format duration
+const formatDuration = (start?: string, end?: string) => {
+    if (!start || !end) return '-';
+    const s = new Date(start).getTime();
+    const e = new Date(end).getTime();
+    const diff = e - s;
+    if (diff < 0) return '-';
 
-  // Create User State
-  const [isCreateUserOpen, setCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
-      username: '',
-      fullName: '',
-      empCode: '',
-      email: '',
-      password: '',
-      role: Role.VIEWER
-  });
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+};
 
-  // Reset Password State
-  const [isResetPasswordOpen, setResetPasswordOpen] = useState(false);
-  const [resetData, setResetData] = useState<{ id: string, username: string, newPass: string } | null>(null);
+// Helper to format date
+const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('en-IN', {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+};
 
-  // Stats Logic
-  const totalSheets = sheets.length;
-  const completed = sheets.filter(s => s.status === SheetStatus.COMPLETED).length;
-  const locked = sheets.filter(s => s.status === SheetStatus.LOCKED).length;
-  const draft = sheets.filter(s => s.status === SheetStatus.DRAFT).length;
-  
-  const barData = [
-    { name: 'Completed', count: completed },
-    { name: 'Locked (Ready)', count: locked },
-    { name: 'Drafts', count: draft }
-  ];
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initialViewMode, onViewSheet, onNavigate }) => {
+    const { users, approveUser, deleteUser, toggleUserActive, sheets, auditLogs, deleteSheet, register, resetPassword, currentUser } = useApp();
 
-  const pieData = [
-      { name: 'Draft', value: draft, color: '#94a3b8' },
-      { name: 'Locked', value: locked, color: '#f97316' },
-      { name: 'Completed', value: completed, color: '#22c55e' }
-  ];
+    // Map initialViewMode (from App router) to internal tab state
+    const getInitialTab = (mode: string) => {
+        if (mode === 'users') return 'users';
+        if (mode === 'database') return 'database';
+        return 'dashboard'; // 'analytics' -> 'dashboard'
+    };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation(); 
-    const reason = prompt("Enter reason for deletion:");
-    if (reason) {
-        deleteSheet(id, reason);
-    }
-  };
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'tracking' | 'users' | 'database'>(getInitialTab(initialViewMode));
 
-  const handleApprove = (e: React.MouseEvent, id: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      approveUser(id, true);
-  };
+    // Sync tab if prop changes (optional, but good for reliable navigation)
+    React.useEffect(() => {
+        setActiveTab(getInitialTab(initialViewMode));
+    }, [initialViewMode]);
+    const [searchTerm, setSearchTerm] = useState('');
 
-  const handleReject = (e: React.MouseEvent, id: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      approveUser(id, false);
-  };
+    // --- USER MANAGEMENT STATE ---
+    const [isCreateUserOpen, setCreateUserOpen] = useState(false);
+    const [newUser, setNewUser] = useState({
+        username: '', fullName: '', empCode: '', email: '', password: '', role: Role.VIEWER
+    });
+    const [isResetPasswordOpen, setResetPasswordOpen] = useState(false);
+    const [resetData, setResetData] = useState<{ id: string, username: string, newPass: string } | null>(null);
 
-  const handleCreateUserSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!newUser.username || !newUser.password || !newUser.fullName || !newUser.empCode) {
-          alert("All fields are required");
-          return;
-      }
+    const [dashboardRoleFilter, setDashboardRoleFilter] = useState<Role.ADMIN | Role.STAGING_SUPERVISOR | Role.LOADING_SUPERVISOR>(Role.ADMIN);
 
-      register({
-          id: Date.now().toString(),
-          username: newUser.username,
-          fullName: newUser.fullName,
-          empCode: newUser.empCode,
-          email: newUser.email,
-          password: newUser.password,
-          role: newUser.role,
-          isApproved: true // Auto-approve admin created users
-      });
-      
-      setCreateUserOpen(false);
-      setNewUser({ username: '', fullName: '', empCode: '', email: '', password: '', role: Role.VIEWER });
-      alert('User created successfully.');
-  };
+    // Filter sheets based on user role (Strict access control)
+    const visibleSheets = useMemo(() => {
+        if (!currentUser) return [];
 
-  const openResetPassword = (e: React.MouseEvent, user: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setResetData({ id: user.id, username: user.username, newPass: '' });
-    setResetPasswordOpen(true);
-  };
+        // STRICT SUPERVISOR ROLES
+        if (currentUser.role === Role.STAGING_SUPERVISOR) {
+            return sheets.filter(s => s.supervisorName === currentUser.fullName || s.supervisorName === currentUser.username);
+        }
+        if (currentUser.role === Role.LOADING_SUPERVISOR) {
+            // FIX: Relaxed filter to show ALL Locked/Completed sheets to Loading Supervisor
+            return sheets.filter(s => s.status === SheetStatus.LOCKED || s.status === SheetStatus.COMPLETED);
+        }
 
-  const handleResetPasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (resetData && resetData.newPass) {
-        resetPassword(resetData.id, resetData.newPass);
-        alert(`Password for ${resetData.username} has been reset.`);
-        setResetPasswordOpen(false);
-        setResetData(null);
-    }
-  };
+        // ADMIN / VIEWER - Can filter view
+        if (currentUser.role === Role.ADMIN || currentUser.role === Role.VIEWER) {
+            if (dashboardRoleFilter === Role.STAGING_SUPERVISOR) {
+                // Mimic Staging View: Show ALL sheets (since Admin wants Global Staging Overview)
+                // Effectively same as 'ALL' but contextually focused on Staging.
+                // Could filter out Completed if we wanted "Active Staging Only", but "Overview" usually implies everything.
+                return sheets;
+            }
+            if (dashboardRoleFilter === Role.LOADING_SUPERVISOR) {
+                // Mimic Loading View: Show only Ready/Completed sheets
+                return sheets.filter(s => s.status === SheetStatus.LOCKED || s.status === SheetStatus.COMPLETED);
+            }
+            return sheets; // Default Role.ADMIN -> Show All
+        }
 
-  const isAdmin = currentUser?.role === Role.ADMIN;
+        return [];
+    }, [sheets, currentUser, dashboardRoleFilter]);
 
-  // --- VIEW 1: ANALYTICS DASHBOARD (Monitoring) ---
-  if (viewMode === 'analytics') {
-      return (
-          <div className="space-y-6">
-              {/* KPIs */}
-              <div className={`grid grid-cols-1 gap-4 ${isAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                  <div 
-                    onClick={() => onNavigate?.('staging')}
-                    className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group"
-                  >
-                      <div>
-                          <p className="text-gray-500 text-xs uppercase font-bold tracking-wider group-hover:text-blue-600 transition-colors">Total Sheets</p>
-                          <p className="text-2xl font-bold text-gray-800">{totalSheets}</p>
-                      </div>
-                      <div className="p-3 bg-blue-50 text-blue-600 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors"><Clipboard size={20}/></div>
-                  </div>
-                  <div 
-                    onClick={() => onNavigate?.('loading')}
-                    className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-orange-200 transition-all group"
-                  >
-                      <div>
-                          <p className="text-gray-500 text-xs uppercase font-bold tracking-wider group-hover:text-orange-600 transition-colors">Active Loading</p>
-                          <p className="text-2xl font-bold text-orange-600">{locked}</p>
-                      </div>
-                      <div className="p-3 bg-orange-50 text-orange-600 rounded-full group-hover:bg-orange-600 group-hover:text-white transition-colors"><Truck size={20}/></div>
-                  </div>
-                  <div 
-                    onClick={() => onNavigate?.('loading')}
-                    className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-green-200 transition-all group"
-                  >
-                      <div>
-                          <p className="text-gray-500 text-xs uppercase font-bold tracking-wider group-hover:text-green-600 transition-colors">Completed</p>
-                          <p className="text-2xl font-bold text-green-600">{completed}</p>
-                      </div>
-                      <div className="p-3 bg-green-50 text-green-600 rounded-full group-hover:bg-green-600 group-hover:text-white transition-colors"><Check size={20}/></div>
-                  </div>
-                  {isAdmin && (
-                      <div 
-                        onClick={() => onNavigate?.('admin')}
-                        className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-purple-200 transition-all group"
-                      >
-                          <div>
-                              <p className="text-gray-500 text-xs uppercase font-bold tracking-wider group-hover:text-purple-600 transition-colors">Pending Users</p>
-                              <p className="text-2xl font-bold text-purple-600">{users.filter(u => !u.isApproved).length}</p>
-                          </div>
-                          <div className="p-3 bg-purple-50 text-purple-600 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors"><UserIcon size={20}/></div>
-                      </div>
-                  )}
-              </div>
+    // --- ANALYTICS DATA ---
+    const analytics = useMemo(() => {
+        const total = visibleSheets.length;
+        const completed = visibleSheets.filter(s => s.status === SheetStatus.COMPLETED).length;
+        const locked = visibleSheets.filter(s => s.status === SheetStatus.LOCKED).length;
+        const draft = visibleSheets.filter(s => s.status === SheetStatus.DRAFT).length;
+        // ... (rest of analytics calculation logic remains same)
+        // Pending Users - ADMIN ONLY (others see 0)
+        const pendingUsersCount = currentUser?.role === Role.ADMIN ? users.filter(u => !u.isApproved).length : 0;
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Main Chart */}
-                  <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-bold mb-6 text-gray-800">Operational Volume</h3>
-                      <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={barData}>
-                                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                                  <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} />
-                              </BarChart>
-                          </ResponsiveContainer>
-                      </div>
-                  </div>
+        // Daily Volume (Last 7 days) - Calculated from visibleSheets
+        // FIX: Use Locale Date (YYYY-MM-DD) instead of UTC to ensure charts match local tables
+        const last7Days = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        }).reverse();
 
-                  {/* Status Distribution */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-bold mb-2 text-gray-800">Status Ratio</h3>
-                      <div className="h-48">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                      {pieData.map((entry, index) => (
-                                          <Cell key={`cell-${index}`} fill={entry.color} />
-                                      ))}
-                                  </Pie>
-                                  <Tooltip />
-                                  <Legend verticalAlign="bottom" height={36}/>
-                              </PieChart>
-                          </ResponsiveContainer>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                          <h4 className="text-xs font-bold text-gray-400 uppercase">System Health</h4>
-                          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
-                              <Activity size={16} /> All Systems Operational
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      );
-  }
+        const volumeTrend = last7Days.map(date => {
+            return {
+                date: new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }),
+                // Compare against the substring (YYYY-MM-DD) which is first 10 chars of ISO string if stored in UTC or similar
+                // But simplified: effectively matching the prefix string in the DB
+                completed: visibleSheets.filter(s => s.status === SheetStatus.COMPLETED && s.completedAt?.startsWith(date)).length,
+                created: visibleSheets.filter(s => s.createdAt.startsWith(date)).length
+            };
+        });
 
-  // --- VIEW 2: USERS PANEL ---
-  if (viewMode === 'users') {
-      return (
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                  <div>
-                      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                          <UserIcon className="text-blue-600" /> User Administration
-                      </h2>
-                      <p className="text-sm text-gray-500">Approve new registrations and manage existing accounts.</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setCreateUserOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-sm"
-                      >
-                          <UserPlus size={16} /> Add User
-                      </button>
-                      <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                          <input 
-                              type="text" 
-                              placeholder="Search users..." 
-                              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              value={searchTerm}
-                              onChange={e => setSearchTerm(e.target.value)}
-                          />
-                      </div>
-                  </div>
-              </div>
+        // Supervisor Performance - Only for Admin (others will see empty or self, but we'll hide the chart)
+        const supervisorStats: Record<string, number> = {};
+        visibleSheets.forEach(s => {
+            if (s.supervisorName) {
+                supervisorStats[s.supervisorName] = (supervisorStats[s.supervisorName] || 0) + 1;
+            }
+        });
+        const supervisorData = Object.entries(supervisorStats)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // Top 5
 
-              <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                      <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
-                          <tr>
-                              <th className="p-3 rounded-tl-lg">User</th>
-                              <th className="p-3">Full Name</th>
-                              <th className="p-3">Role</th>
-                              <th className="p-3">Email</th>
-                              <th className="p-3 text-center">Status</th>
-                              <th className="p-3 text-center rounded-tr-lg w-40">Actions</th>
-                          </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                          {users
-                            .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || (u.fullName && u.fullName.toLowerCase().includes(searchTerm.toLowerCase())))
-                            .sort((a, b) => (a.isApproved === b.isApproved) ? 0 : a.isApproved ? 1 : -1) // Pending first
-                            .map(user => (
-                              <tr key={user.id} className={`hover:bg-gray-50 transition ${!user.isApproved ? 'bg-orange-50/50' : ''}`}>
-                                  <td className="p-3 font-medium text-gray-900">{user.username}</td>
-                                  <td className="p-3 text-gray-700">{user.fullName || '-'}</td>
-                                  <td className="p-3">
-                                    <span className="px-2 py-1 rounded bg-gray-100 text-gray-600 text-xs font-medium">
-                                        {user.role}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-gray-500">{user.email || 'N/A'}</td>
-                                  <td className="p-3 text-center">
-                                      {user.isApproved ? (
-                                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                              <Check size={12} /> Active
-                                          </span>
-                                      ) : (
-                                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 animate-pulse">
-                                              <ShieldAlert size={12} /> Pending
-                                          </span>
-                                      )}
-                                  </td>
-                                  <td className="p-3 text-center">
-                                      {!user.isApproved ? (
-                                          <div className="flex justify-center gap-2">
-                                              <button 
-                                                onClick={(e) => handleApprove(e, user.id)}
-                                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded shadow-sm transition-colors text-xs font-bold"
-                                                title="Approve"
-                                              >
-                                                  Approve
-                                              </button>
-                                              <button 
-                                                onClick={(e) => handleReject(e, user.id)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded shadow-sm transition-colors text-xs font-bold"
-                                                title="Reject"
-                                              >
-                                                  Reject
-                                              </button>
-                                          </div>
-                                      ) : (
-                                          <button 
-                                            onClick={(e) => openResetPassword(e, user)}
-                                            className="text-gray-400 hover:text-blue-600 p-2 rounded transition-colors"
-                                            title="Reset Password"
-                                          >
-                                            <Key size={16} />
-                                          </button>
-                                      )}
-                                  </td>
-                              </tr>
-                          ))}
-                          {users.length === 0 && (
-                              <tr><td colSpan={6} className="p-8 text-center text-gray-400 italic">No users found.</td></tr>
-                          )}
-                      </tbody>
-                  </table>
-              </div>
-          </div>
-          
-           {/* Create User Modal */}
-          {isCreateUserOpen && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-                      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                          <h3 className="font-bold text-gray-700 flex items-center gap-2"><UserPlus size={18} className="text-blue-600"/> Create New User</h3>
-                          <button onClick={() => setCreateUserOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
-                      </div>
-                      <form onSubmit={handleCreateUserSubmit} className="p-6 space-y-4">
-                          <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Username</label>
-                              <input 
-                                  type="text" 
-                                  required
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter username"
-                                  value={newUser.username}
-                                  onChange={e => setNewUser({...newUser, username: e.target.value})}
-                              />
-                          </div>
-                           <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Full Name</label>
-                              <input 
-                                  type="text" 
-                                  required
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter full name"
-                                  value={newUser.fullName}
-                                  onChange={e => setNewUser({...newUser, fullName: e.target.value})}
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Employee Code</label>
-                              <input 
-                                  type="text" 
-                                  required
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter employee code"
-                                  value={newUser.empCode}
-                                  onChange={e => setNewUser({...newUser, empCode: e.target.value})}
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
-                              <input 
-                                  type="email" 
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter email address"
-                                  value={newUser.email}
-                                  onChange={e => setNewUser({...newUser, email: e.target.value})}
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Password</label>
-                              <input 
-                                  type="password" 
-                                  required
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Enter password"
-                                  value={newUser.password}
-                                  onChange={e => setNewUser({...newUser, password: e.target.value})}
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Role</label>
-                              <select 
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                  value={newUser.role}
-                                  onChange={e => setNewUser({...newUser, role: e.target.value as Role})}
-                              >
-                                  <option value={Role.STAGING_SUPERVISOR}>Staging Supervisor</option>
-                                  <option value={Role.LOADING_SUPERVISOR}>Loading Supervisor</option>
-                                  <option value={Role.ADMIN}>Administrator</option>
-                                  <option value={Role.VIEWER}>Viewer</option>
-                              </select>
-                          </div>
-                          <div className="pt-2">
-                              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-md transition-all active:scale-[0.98]">
-                                  Create User
-                              </button>
-                          </div>
-                      </form>
-                  </div>
-              </div>
-          )}
+        const pieData = [
+            { name: 'Draft', value: draft, color: '#94a3b8' },
+            { name: 'Loading', value: locked, color: '#f97316' },
+            { name: 'Done', value: completed, color: '#22c55e' }
+        ];
 
-          {/* Reset Password Modal (Admin) */}
-          {isResetPasswordOpen && resetData && (
-               <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                  <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
-                      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                          <h3 className="font-bold text-gray-700 flex items-center gap-2"><Key size={18} className="text-orange-600"/> Reset Password</h3>
-                          <button onClick={() => setResetPasswordOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
-                      </div>
-                      <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
-                          <div>
-                              <p className="text-sm text-gray-600 mb-2">Resetting password for: <span className="font-bold text-gray-900">{resetData.username}</span></p>
-                              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">New Password</label>
-                              <input 
-                                  type="text" // Visible text for admin to see what they set
-                                  required
-                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                  placeholder="Enter new password"
-                                  value={resetData.newPass}
-                                  onChange={e => setResetData({...resetData, newPass: e.target.value})}
-                              />
-                          </div>
-                          <div className="pt-2">
-                              <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg shadow-md transition-all active:scale-[0.98]">
-                                  Update Password
-                              </button>
-                          </div>
-                      </form>
-                  </div>
-               </div>
-          )}
+        return { total, completed, locked, draft, volumeTrend, supervisorData, pieData, pendingUsersCount };
+    }, [visibleSheets, users, currentUser]);
+
+    // ... (Handlers)
+
+    // ... (Render Content)
+    const renderContent = () => {
+        // ... (access check)
+        if (activeTab !== 'dashboard' && currentUser?.role !== Role.ADMIN) {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                    <ShieldAlert className="text-red-500 w-12 h-12 mb-4" />
+                    <h3 className="text-xl font-bold text-gray-800">Access Restricted</h3>
+                    <p className="text-gray-500 mt-2">You do not have permission to view this section.</p>
+                </div>
+            );
+        }
+
+        switch (activeTab) {
+            case 'dashboard':
+                return (
+                    <div className="space-y-6 animate-fadeIn">
+                        {/* Admin View As Filter */}
+                        {currentUser?.role === Role.ADMIN && (
+                            <div className="flex justify-end items-center mb-4">
+                                <span className="text-sm text-gray-500 mr-2 font-medium">View As:</span>
+                                <select
+                                    className="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm"
+                                    value={dashboardRoleFilter}
+                                    onChange={(e) => setDashboardRoleFilter(e.target.value as any)}
+                                >
+                                    <option value={Role.ADMIN}>All Operations</option>
+                                    <option value={Role.STAGING_SUPERVISOR}>Staging Overview</option>
+                                    <option value={Role.LOADING_SUPERVISOR}>Loading Overview</option>
+                                </select>
+                            </div>
+                        )}
+                        {/* KPI Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                <div className="relative z-10">
+                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Total Sheets</p>
+                                    <h3 className="text-3xl font-extrabold text-gray-800">{analytics.total}</h3>
+                                    <div className="mt-2 flex items-center text-xs text-blue-600 font-medium"><Activity size={14} className="mr-1" /> {currentUser?.role === Role.ADMIN ? 'All Time' : 'Assigned to You'}</div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                <div className="relative z-10">
+                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Completed</p>
+                                    <h3 className="text-3xl font-extrabold text-green-600">{analytics.completed}</h3>
+                                    <div className="mt-2 flex items-center text-xs text-green-600 font-medium"><Check size={14} className="mr-1" /> Successfully processed</div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                <div className="relative z-10">
+                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">In Progress</p>
+                                    <h3 className="text-3xl font-extrabold text-orange-600">{analytics.locked}</h3>
+                                    <div className="mt-2 flex items-center text-xs text-orange-600 font-medium"><Truck size={14} className="mr-1" /> {currentUser?.role === Role.ADMIN ? 'Currently Loading' : 'Your Active Sheets'}</div>
+                                </div>
+                            </div>
+
+                            {/* Intelligent Users Card: Shows Pending if any, else Total - ADMIN ONLY */}
+                            {currentUser?.role === Role.ADMIN && (
+                                analytics.pendingUsersCount > 0 ? (
+                                    <div
+                                        className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all"
+                                        onClick={() => setActiveTab('users')}
+                                    >
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                        <div className="relative z-10">
+                                            <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><ShieldAlert size={12} /> Action Required</p>
+                                            <h3 className="text-3xl font-extrabold text-red-700">{analytics.pendingUsersCount}</h3>
+                                            <div className="mt-2 flex items-center text-xs text-red-600 font-bold"><UserIcon size={14} className="mr-1" /> Users Pending Approval</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                        <div className="relative z-10">
+                                            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Users</p>
+                                            <h3 className="text-3xl font-extrabold text-purple-600">{users.length}</h3>
+                                            <div className="mt-2 flex items-center text-xs text-purple-600 font-medium"><UserIcon size={14} className="mr-1" /> Active Accounts</div>
+                                        </div>
+                                    </div>
+                                )
+                            )}
+                        </div>
+
+                        {/* Charts Row 1 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                    <Activity size={18} className="text-blue-500" /> Operational Volume (7 Days)
+                                </h3>
+                                <div className="h-72">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={analytics.volumeTrend}>
+                                            <defs>
+                                                <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.1} />
+                                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                            <Tooltip
+                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                                itemStyle={{ fontSize: '12px', fontWeight: 600 }}
+                                            />
+                                            <Area type="monotone" dataKey="created" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorCreated)" name="Created" />
+                                            <Area type="monotone" dataKey="completed" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorCompleted)" name="Completed" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                    <FileText size={18} className="text-orange-500" /> Status Distribution
+                                </h3>
+                                <div className="h-64 relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={analytics.pieData}
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {analytics.pieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] text-center">
+                                        <div className="text-2xl font-bold text-gray-800">{analytics.total}</div>
+                                        <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Sheets</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Top Supervisors - ADMIN ONLY */}
+                        {currentUser?.role === Role.ADMIN && (
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                                    <UserCheck size={18} className="text-purple-500" /> Top Supervisors
+                                </h3>
+                                <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={analytics.supervisorData} layout="vertical" margin={{ left: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                                            <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                            <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 13, fontWeight: 500 }} />
+                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                                            <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={24} name="Sheets Managed" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'tracking':
+                return (
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Clock className="text-blue-600" /> Tracking & Audit</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Detailed lifecycle tracking of all sheets.</p>
+                                </div>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search sheet ID..."
+                                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th className="p-4 rounded-tl-lg">Sheet ID</th>
+                                            <th className="p-4">Created</th>
+                                            <th className="p-4">Locked (Loading)</th>
+                                            <th className="p-4">Completed</th>
+                                            <th className="p-4">Total Duration</th>
+                                            <th className="p-4 rounded-tr-lg text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {sheets
+                                            .filter(s => s.id.includes(searchTerm))
+                                            .slice() // Copy to sort
+                                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                            .map(s => (
+                                                <tr key={s.id} className="hover:bg-gray-50 transition">
+                                                    <td className="p-4 font-mono font-medium text-blue-600">{s.id}</td>
+                                                    <td className="p-4 text-gray-700">
+                                                        <div className="font-medium">{formatDate(s.createdAt)}</div>
+                                                        <div className="text-xs text-gray-400">{s.createdBy}</div>
+                                                    </td>
+                                                    <td className="p-4 text-gray-700">
+                                                        <div className="font-medium">{formatDate(s.lockedAt)}</div>
+                                                        {s.lockedBy && <div className="text-xs text-gray-400">{s.lockedBy}</div>}
+                                                    </td>
+                                                    <td className="p-4 text-gray-700">
+                                                        <div className="font-medium">{formatDate(s.completedAt)}</div>
+                                                        {s.completedBy && <div className="text-xs text-gray-400">{s.completedBy}</div>}
+                                                    </td>
+                                                    <td className="p-4 font-medium text-gray-900">
+                                                        {formatDuration(s.createdAt, s.completedAt)}
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold 
+                                                            ${s.status === 'LOCKED' ? 'bg-orange-100 text-orange-700' :
+                                                                s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                                                                    'bg-gray-100 text-gray-600'}`}>
+                                                            {s.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'users':
+                return (
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><UserIcon className="text-blue-600" /> User Management</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Manage system access and permissions.</p>
+                                </div>
+                                {currentUser?.role === Role.ADMIN && (
+                                    <button onClick={() => setCreateUserOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all md:w-auto w-full justify-center">
+                                        <UserPlus size={16} /> Add User
+                                    </button>
+                                )}
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th className="p-4 rounded-tl-lg">User</th>
+                                            <th className="p-4">Role</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-center rounded-tr-lg">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {users
+                                            .slice()
+                                            .sort((a, b) => Number(Boolean(a.isApproved)) - Number(Boolean(b.isApproved))) // Pending (false) first
+                                            .map(user => (
+                                                <tr key={user.id} className={`hover:bg-gray-50 transition ${!user.isApproved ? 'bg-red-50/50' : ''}`}>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-gray-900">{user.fullName || user.username}</div>
+                                                        <div className="text-xs text-gray-500">{user.email}</div>
+                                                    </td>
+                                                    <td className="p-4"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-600">{user.role}</span></td>
+                                                    <td className="p-4">
+                                                        {user.isApproved ? (
+                                                            user.isActive !== false ?
+                                                                <span className="text-green-600 flex items-center gap-1 text-xs font-bold"><Check size={12} /> Active</span> :
+                                                                <span className="text-gray-500 flex items-center gap-1 text-xs font-bold"><X size={12} /> Inactive</span>
+                                                        ) : <span className="text-orange-500 flex items-center gap-1 text-xs font-bold"><ShieldAlert size={12} /> Pending</span>}
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        {currentUser?.role === Role.ADMIN && (
+                                                            <div className="flex justify-center gap-2">
+                                                                {!user.isApproved ? (
+                                                                    <>
+                                                                        <button onClick={(e) => approveUser(user.id, true)} className="text-green-600 hover:bg-green-50 p-1 rounded font-bold text-xs uppercase">Approve</button>
+                                                                        <button onClick={(e) => approveUser(user.id, false)} className="text-red-600 hover:bg-red-50 p-1 rounded font-bold text-xs uppercase">Reject</button>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <button onClick={() => toggleUserActive(user.id, user.isActive === false)} className="text-gray-400 hover:text-blue-600 p-2 rounded" title="Toggle Active"><UserCheck size={16} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); setResetData({ id: user.id, username: user.username, newPass: '' }); setResetPasswordOpen(true); }} className="text-gray-400 hover:text-orange-600 p-2 rounded" title="Reset Password"><Key size={16} /></button>
+                                                                        <button onClick={(e) => handleDeleteUser(e, user.id, user.username)} className="text-gray-400 hover:text-red-600 p-2 rounded" title="Delete"><Trash2 size={16} /></button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'database':
+                return (
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Database className="text-blue-600" /> Database Registry</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Full record of all operational sheets.</p>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                    {/* Admin View As Filter for Database */}
+                                    {currentUser && currentUser.role === Role.ADMIN && (
+                                        <select
+                                            className="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm mr-2"
+                                            value={dashboardRoleFilter || Role.ADMIN}
+                                            onChange={(e) => setDashboardRoleFilter(e.target.value as any)}
+                                        >
+                                            <option value={Role.ADMIN}>All Operations</option>
+                                            <option value={Role.STAGING_SUPERVISOR}>Staging Overview</option>
+                                            <option value={Role.LOADING_SUPERVISOR}>Loading Overview</option>
+                                        </select>
+                                    )}
+
+                                    <button onClick={downloadCSV} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all">
+                                        <Download size={16} /> Export to Excel
+                                    </button>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                        <input
+                                            type="text"
+                                            placeholder="Search..."
+                                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64"
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto border rounded-xl border-gray-200">
+                                <table className="w-full text-xs text-left border-collapse">
+                                    <thead className="bg-gray-100 text-gray-700 font-bold uppercase tracking-wider">
+                                        <tr>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">ID</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Date</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Shift</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Ship To</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50">Status</th>
+                                            <th className="p-3 border border-gray-300 bg-blue-50 text-blue-800">Staging By</th>
+                                            <th className="p-3 border border-gray-300 bg-blue-50 text-blue-800">Started At</th>
+                                            <th className="p-3 border border-gray-300 bg-orange-50 text-orange-800">Loading By</th>
+                                            <th className="p-3 border border-gray-300 bg-orange-50 text-orange-800">Started At</th>
+                                            <th className="p-3 border border-gray-300 bg-green-50 text-green-800">Completed By</th>
+                                            <th className="p-3 border border-gray-300 bg-green-50 text-green-800">Completed At</th>
+                                            <th className="p-3 border border-gray-300 bg-gray-50 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 bg-white">
+                                        {visibleSheets && visibleSheets.length > 0 ? (
+                                            visibleSheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                                                <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-blue-50 transition cursor-pointer group">
+                                                    <td className="p-2 border border-gray-200 font-mono text-blue-600 font-bold whitespace-nowrap">{s.id}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap">{s.date}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap">{s.shift}</td>
+                                                    <td className="p-2 border border-gray-200 max-w-[150px] truncate" title={s.destination}>{s.destination}</td>
+                                                    <td className="p-2 border border-gray-200 text-center">
+                                                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border
+                                                                ${s.status === 'LOCKED' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                                s.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                    'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                            {s.status}
+                                                        </span>
+                                                    </td>
+                                                    {/* Staging Info */}
+                                                    <td className="p-2 border border-gray-200">
+                                                        <div className="font-semibold">{s.supervisorName}</div>
+                                                        <div className="text-[10px] text-gray-500">{s.createdBy}</div>
+                                                    </td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.createdAt)}</td>
+
+                                                    {/* Loading Info */}
+                                                    <td className="p-2 border border-gray-200">
+                                                        <div className="font-semibold">{s.loadingSvName || '-'}</div>
+                                                        {s.lockedBy && <div className="text-[10px] text-gray-500">{s.lockedBy}</div>}
+                                                    </td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.lockedAt)}</td>
+
+                                                    {/* Completion Info */}
+                                                    <td className="p-2 border border-gray-200 font-semibold">{s.completedBy || '-'}</td>
+                                                    <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.completedAt)}</td>
+
+                                                    <td className="p-2 border border-gray-200 text-center">
+                                                        <button onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const reason = window.prompt("To DELETE this sheet, you must provide a reason:");
+                                                            if (reason && reason.trim()) {
+                                                                if (window.confirm(`Are you sure you want to PERMANENTLY delete Sheet ${s.id}?\nReason: ${reason}`)) {
+                                                                    deleteSheet(s.id, reason);
+                                                                }
+                                                            }
+                                                        }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan={12} className="p-4 text-center text-gray-400 font-medium italic">No sheets found in this view.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50/50 p-6 space-y-6">
+            {/* Header Tabs */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex gap-2 overflow-x-auto">
+                <button
+                    onClick={() => setActiveTab('dashboard')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                    <LayoutDashboard size={18} /> Overview
+                </button>
+
+                {currentUser?.role === Role.ADMIN && (
+                    <>
+                        <button
+                            onClick={() => setActiveTab('tracking')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'tracking' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Activity size={18} /> Tracking
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'} relative`}
+                        >
+                            <UserIcon size={18} /> User Access
+                            {analytics.pendingUsersCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('database')}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'database' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Database size={18} /> Database
+                        </button>
+                    </>
+                )}
+            </div>
+
+            {/* Main Content Area */}
+            {renderContent()}
+
+            {/* Modals (Create User / Reset Password) */}
+            {isCreateUserOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2"><UserPlus size={18} className="text-blue-600" /> New User</h3>
+                            <button onClick={() => setCreateUserOpen(false)}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+                        <form onSubmit={handleCreateUserSubmit} className="p-6 space-y-4">
+                            <div><label className="text-xs font-bold text-gray-500 uppercase">Username</label><input required className="w-full mt-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-gray-500 uppercase">Full Name</label><input required className="w-full mt-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} /></div>
+                            <div><label className="text-xs font-bold text-gray-500 uppercase">Emp Code</label><input required className="w-full mt-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={newUser.empCode} onChange={e => setNewUser({ ...newUser, empCode: e.target.value })} /></div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase">Role</label>
+                                <select className="w-full mt-1 px-4 py-2 border rounded-lg text-sm bg-white" value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}>
+                                    <option value={Role.STAGING_SUPERVISOR}>Staging Supervisor</option>
+                                    <option value={Role.LOADING_SUPERVISOR}>Loading Supervisor</option>
+                                    <option value={Role.ADMIN}>Administrator</option>
+                                    <option value={Role.VIEWER}>Viewer</option>
+                                </select>
+                            </div>
+                            <div className="pt-2"><button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-transform active:scale-95">Create Account</button></div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isResetPasswordOpen && resetData && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2"><Key size={18} className="text-orange-600" /> Reset Password</h3>
+                            <button onClick={() => setResetPasswordOpen(false)}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
+                        </div>
+                        <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
+                            <p className="text-sm text-gray-600">Access for <span className="font-bold text-gray-900">{resetData.username}</span></p>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase">New Password</label>
+                                <input required type="text" className="w-full mt-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" value={resetData.newPass} onChange={e => setResetData({ ...resetData, newPass: e.target.value })} />
+                            </div>
+                            <button type="submit" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition-transform active:scale-95">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
-      );
-  }
-
-  // --- VIEW 3: DATABASE PANEL ---
-  if (viewMode === 'database') {
-      return (
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                      <Database className="text-blue-600" /> Database
-                  </h2>
-                  <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                      <input 
-                          type="text" 
-                          placeholder="Search sheets..." 
-                          className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={searchTerm}
-                          onChange={e => setSearchTerm(e.target.value)}
-                      />
-                  </div>
-              </div>
-              <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                      <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
-                          <tr>
-                              <th className="p-3 rounded-tl-lg">Sheet ID</th>
-                              <th className="p-3">Date</th>
-                              <th className="p-3">Dock/Dest</th>
-                              <th className="p-3">Transporter</th>
-                              <th className="p-3">Status</th>
-                              <th className="p-3">Supervisor</th>
-                              <th className="p-3 text-center rounded-tr-lg w-24">Actions</th>
-                          </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                          {sheets
-                              .filter(s => s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()))
-                              .map(s => (
-                              <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-gray-50 transition cursor-pointer">
-                                  <td className="p-3 font-mono font-medium text-blue-600">{s.id}</td>
-                                  <td className="p-3 text-gray-500">{s.date}</td>
-                                  <td className="p-3 text-gray-700 font-medium">{s.loadingDockNo || s.destination || '-'}</td>
-                                  <td className="p-3 text-gray-500">{s.transporter || '-'}</td>
-                                  <td className="p-3">
-                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        ${s.status === 'LOCKED' ? 'bg-orange-100 text-orange-800' : 
-                                          s.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
-                                          'bg-gray-100 text-gray-600'}`}>
-                                        {s.status}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-gray-700">{s.supervisorName}</td>
-                                  <td className="p-3 text-center">
-                                      <button 
-                                        onClick={(e) => handleDelete(e, s.id)}
-                                        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
-                                        title="Delete Sheet"
-                                      >
-                                          <Trash2 size={16} />
-                                      </button>
-                                  </td>
-                              </tr>
-                          ))}
-                          {sheets.length === 0 && (
-                              <tr><td colSpan={7} className="p-8 text-center text-gray-400 italic">No records found.</td></tr>
-                          )}
-                      </tbody>
-                  </table>
-              </div>
-          </div>
-        </div>
-      );
-  }
-
-  return <div>Unknown View Mode</div>;
+    );
 };
