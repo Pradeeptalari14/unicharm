@@ -201,28 +201,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                 </div>
                             </div>
 
-                            {/* Intelligent Users Card: Shows Pending if any, else Total */}
-                            {analytics.pendingUsersCount > 0 ? (
-                                <div
-                                    className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all"
-                                    onClick={() => setActiveTab('users')}
-                                >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                                    <div className="relative z-10">
-                                        <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><ShieldAlert size={12} /> Action Required</p>
-                                        <h3 className="text-3xl font-extrabold text-red-700">{analytics.pendingUsersCount}</h3>
-                                        <div className="mt-2 flex items-center text-xs text-red-600 font-bold"><UserIcon size={14} className="mr-1" /> Users Pending Approval</div>
+                            {/* Intelligent Users Card: Shows Pending if any, else Total - ADMIN ONLY */}
+                            {currentUser?.role === Role.ADMIN && (
+                                analytics.pendingUsersCount > 0 ? (
+                                    <div
+                                        className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all"
+                                        onClick={() => setActiveTab('users')}
+                                    >
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                        <div className="relative z-10">
+                                            <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><ShieldAlert size={12} /> Action Required</p>
+                                            <h3 className="text-3xl font-extrabold text-red-700">{analytics.pendingUsersCount}</h3>
+                                            <div className="mt-2 flex items-center text-xs text-red-600 font-bold"><UserIcon size={14} className="mr-1" /> Users Pending Approval</div>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                                    <div className="relative z-10">
-                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Users</p>
-                                        <h3 className="text-3xl font-extrabold text-purple-600">{users.length}</h3>
-                                        <div className="mt-2 flex items-center text-xs text-purple-600 font-medium"><UserIcon size={14} className="mr-1" /> Active Accounts</div>
+                                ) : (
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                        <div className="relative z-10">
+                                            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Users</p>
+                                            <h3 className="text-3xl font-extrabold text-purple-600">{users.length}</h3>
+                                            <div className="mt-2 flex items-center text-xs text-purple-600 font-medium"><UserIcon size={14} className="mr-1" /> Active Accounts</div>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             )}
                         </div>
 
