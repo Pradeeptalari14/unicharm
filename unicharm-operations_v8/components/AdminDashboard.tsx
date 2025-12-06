@@ -108,9 +108,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
         ];
 
         // Advanced Stats
-        const todayStr = new Date().toISOString().split('T')[0];
-        const createdToday = sheets.filter(s => s.date === todayStr).length;
-        const completedToday = sheets.filter(s => s.status === SheetStatus.COMPLETED && s.date === todayStr).length;
+
+        // Helper to check if a date string is today (handles ISO YYYY-MM-DD and Locale formats)
+        const isToday = (dateStr: string) => {
+            if (!dateStr) return false;
+            const today = new Date();
+            const d = new Date(dateStr);
+
+            // Check exact string matches first for speed
+            if (dateStr === today.toISOString().split('T')[0]) return true;
+            if (dateStr === today.toLocaleDateString()) return true;
+
+            // Check date components (robust fallback)
+            return !isNaN(d.getTime()) && d.toDateString() === today.toDateString();
+        };
+
+        const createdToday = sheets.filter(s => isToday(s.date)).length;
+        const completedToday = sheets.filter(s => s.status === SheetStatus.COMPLETED && isToday(s.date)).length;
 
         const stagingStaff = users.filter(u => u.role === Role.STAGING_SUPERVISOR && u.isApproved).length;
         const loadingStaff = users.filter(u => u.role === Role.LOADING_SUPERVISOR && u.isApproved).length;

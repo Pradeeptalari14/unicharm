@@ -5,7 +5,15 @@ import { Clock, AlertTriangle } from 'lucide-react';
 
 export const StaffPerformanceWidget = () => {
     const { users, sheets, currentUser } = useApp();
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Helper for robust date checking
+    const isToday = (dateStr: string) => {
+        if (!dateStr) return false;
+        const today = new Date();
+        const d = new Date(dateStr);
+        if (dateStr === today.toISOString().split('T')[0]) return true;
+        if (dateStr === today.toLocaleDateString()) return true;
+        return !isNaN(d.getTime()) && d.toDateString() === today.toDateString();
+    };
 
     const staffStats = useMemo(() => {
         return users
@@ -26,7 +34,7 @@ export const StaffPerformanceWidget = () => {
                 // Completed Today
                 const completedToday = sheets.filter(s =>
                     s.status === SheetStatus.COMPLETED &&
-                    s.date === todayStr &&
+                    isToday(s.date) &&
                     (s.supervisorName === u.username || s.loadingSvName === u.username)
                 ).length;
 
