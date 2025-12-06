@@ -26,8 +26,6 @@ const App = () => {
 
     // --- STATS CALCULATION (Shared) ---
     const stats = useMemo(() => {
-        if (!sheets || !users) return { draft: 0, locked: 0, createdToday: 0, completedToday: 0, stagingStaff: 0, loadingStaff: 0 };
-
         const todayStr = new Date().toISOString().split('T')[0];
         return {
             draft: sheets.filter(s => s.status === SheetStatus.DRAFT).length,

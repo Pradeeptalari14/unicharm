@@ -14,7 +14,6 @@ interface AppContextType {
     logout: () => Promise<void>;
     register: (user: User) => Promise<void>;
     approveUser: (id: string, approve: boolean) => Promise<void>;
-    deleteUser: (id: string) => Promise<void>;
     resetPassword: (id: string, newPass: string) => Promise<void>;
     addSheet: (sheet: SheetData) => Promise<void>;
     updateSheet: (sheet: SheetData) => Promise<void>;
