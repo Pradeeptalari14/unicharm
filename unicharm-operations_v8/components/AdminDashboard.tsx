@@ -521,12 +521,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                         </td>
                                         <td className="p-4 text-slate-700">{user.fullName || '-'}</td>
                                         <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider
                                         ${user.role === Role.ADMIN ? 'bg-purple-100 text-purple-700' :
                                                     user.role === Role.LOADING_SUPERVISOR ? 'bg-orange-100 text-orange-700' :
                                                         user.role === Role.STAGING_SUPERVISOR ? 'bg-blue-100 text-blue-700' :
                                                             'bg-slate-100 text-slate-600'
                                                 }`}>
+                                                {user.role === Role.LOADING_SUPERVISOR && <Truck size={12} />}
+                                                {user.role === Role.STAGING_SUPERVISOR && <Clipboard size={12} />}
+                                                {user.role === Role.ADMIN && <ShieldAlert size={12} />}
                                                 {user.role.replace('_', ' ')}
                                             </span>
                                         </td>
