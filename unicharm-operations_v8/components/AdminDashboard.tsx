@@ -447,6 +447,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
         );
     }
 
+    // User Filter State
+    const [filterRole, setFilterRole] = useState<Role | 'ALL'>('ALL');
+
     // --- VIEW 2: USERS PANEL ---
     if (viewMode === 'users') {
         const filteredUsers = users
@@ -454,8 +457,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                 const searchMatch = u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     (u.fullName && u.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-                // STRICT ROLE SEGREGATION
-                if (currentUser?.role === Role.ADMIN) return searchMatch; // Admin sees all
+                // Role Filter (Tabs)
+                const roleMatch = filterRole === 'ALL' || u.role === filterRole;
+
+                // STRICT ROLE SEGREGATION (Security)
+                if (currentUser?.role === Role.ADMIN) return searchMatch && roleMatch; // Admin sees all (filtered by tabs)
                 if (currentUser?.role === Role.STAGING_SUPERVISOR) {
                     return searchMatch && u.role === Role.STAGING_SUPERVISOR; // Staging sees Staging
                 }
@@ -476,8 +482,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             </h2>
                             <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
+
+                        {/* Role Filter Tabs (Admin Only) */}
+                        {currentUser?.role === Role.ADMIN && (
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setFilterRole('ALL')}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${filterRole === 'ALL' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    onClick={() => setFilterRole(Role.STAGING_SUPERVISOR)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${filterRole === Role.STAGING_SUPERVISOR ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-blue-600'}`}
+                                >
+                                    <Clipboard size={14} /> Staging
+                                </button>
+                                <button
+                                    onClick={() => setFilterRole(Role.LOADING_SUPERVISOR)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${filterRole === Role.LOADING_SUPERVISOR ? 'bg-white text-orange-700 shadow-sm' : 'text-slate-500 hover:text-orange-600'}`}
+                                >
+                                    <Truck size={14} /> Loading
+                                </button>
+                                <button
+                                    onClick={() => setFilterRole(Role.ADMIN)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${filterRole === Role.ADMIN ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500 hover:text-purple-600'}`}
+                                >
+                                    <ShieldAlert size={14} /> Admin
+                                </button>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-3">
-                            {(currentUser?.role === Role.ADMIN || currentUser?.role === Role.STAGING_SUPERVISOR || currentUser?.role === Role.LOADING_SUPERVISOR) && (
+                            {currentUser?.role === Role.ADMIN && (
                                 <button
                                     onClick={() => setCreateUserOpen(true)}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
