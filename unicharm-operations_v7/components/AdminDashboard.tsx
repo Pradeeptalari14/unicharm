@@ -76,7 +76,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
             return sheets.filter(s => s.supervisorName === currentUser.fullName || s.supervisorName === currentUser.username);
         }
         if (currentUser.role === Role.LOADING_SUPERVISOR) {
-            return sheets.filter(s => s.loadingSvName === currentUser.fullName || s.loadingSvName === currentUser.username);
+            return sheets.filter(s =>
+                s.loadingSvName === currentUser.fullName ||
+                s.loadingSvName === currentUser.username ||
+                s.completedBy === currentUser.username // ALSO include sheets explicitly completed by this user
+            );
         }
         return [];
     }, [sheets, currentUser]);

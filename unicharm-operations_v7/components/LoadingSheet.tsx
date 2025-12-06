@@ -290,7 +290,7 @@ export const LoadingSheet: React.FC<Props> = ({ sheet, onClose, initialPreview =
             driverName,
             sealNo,
             regSerialNo,
-            loadingSvName: svName,
+            loadingSvName: svName || (status === SheetStatus.COMPLETED && currentUser?.role === Role.LOADING_SUPERVISOR ? (currentUser.fullName || currentUser.username) : ''),
             loadingSupervisorSign: svSign,
             slSign,
             deoSign,
