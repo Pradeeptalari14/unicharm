@@ -568,13 +568,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                                 </div>
                                             ) : (
                                                 <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={(e) => openResetPassword(e, user)}
-                                                        className="text-slate-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                                                        title="Reset Password"
-                                                    >
-                                                        <Key size={16} />
-                                                    </button>
+                                                    {user.id === currentUser?.id && (
+                                                        <button
+                                                            onClick={(e) => openResetPassword(e, user)}
+                                                            className="text-slate-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                                                            title="Reset Password"
+                                                        >
+                                                            <Key size={16} />
+                                                        </button>
+                                                    )}
                                                     {currentUser?.role === Role.ADMIN && (
                                                         <button
                                                             onClick={(e) => handleUserDelete(e, user.id, user.username)}
