@@ -566,46 +566,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
                     <div className="overflow-x-auto rounded-lg border border-slate-100">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-100 text-slate-700 font-bold uppercase text-xs border-b border-gray-200">
+                            <thead className="bg-slate-800 text-white font-bold uppercase text-xs">
                                 <tr>
                                     <th className="p-0">
                                         <button
                                             type="button"
-                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('username')}
                                         >
-                                            User {sortConfig?.key === 'username' && <ArrowUpDown size={14} className="text-blue-600" />}
+                                            User {sortConfig?.key === 'username' && <ArrowUpDown size={14} className="text-blue-400" />}
                                         </button>
                                     </th>
                                     <th className="p-0">
                                         <button
                                             type="button"
-                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('fullName')}
                                         >
-                                            Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={14} className="text-blue-600" />}
+                                            Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={14} className="text-blue-400" />}
                                         </button>
                                     </th>
                                     <th className="p-0">
                                         <button
                                             type="button"
-                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('role')}
                                         >
-                                            Role {sortConfig?.key === 'role' && <ArrowUpDown size={14} className="text-blue-600" />}
+                                            Role {sortConfig?.key === 'role' && <ArrowUpDown size={14} className="text-blue-400" />}
                                         </button>
                                     </th>
-                                    <th className="p-4">Email</th>
+                                    <th className="p-4 text-gray-300">Email</th>
                                     <th className="p-0 text-center">
                                         <button
                                             type="button"
-                                            className="w-full h-full flex items-center justify-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer uppercase"
+                                            className="w-full h-full flex items-center justify-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer uppercase"
                                             onClick={() => handleSort('isApproved')}
                                         >
-                                            Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={14} className="text-blue-600" />}
+                                            Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={14} className="text-blue-400" />}
                                         </button>
                                     </th>
-                                    <th className="p-4 text-center w-40">Actions</th>
+                                    <th className="p-4 text-center w-40 text-gray-300">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
@@ -853,26 +853,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     </div>
                     <div className="overflow-x-auto rounded-lg border border-slate-100">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
+                            <thead className="bg-slate-800 text-white font-bold uppercase text-xs">
                                 <tr>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('id')}>
-                                        <div className="flex items-center gap-1">Sheet ID {sortConfig?.key === 'id' && <ArrowUpDown size={12} className={sortConfig.direction === 'asc' ? 'rotate-180' : ''} />}</div>
+                                    <th className="p-0">
+                                        <button
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
+                                            onClick={() => handleSort('id')}
+                                        >
+                                            Sheet ID {sortConfig?.key === 'id' && <ArrowUpDown size={14} className="text-blue-400" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('date')}>
-                                        <div className="flex items-center gap-1">Date {sortConfig?.key === 'date' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-0">
+                                        <button
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
+                                            onClick={() => handleSort('date')}
+                                        >
+                                            Date {sortConfig?.key === 'date' && <ArrowUpDown size={14} className="text-blue-400" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4">Dock/Dest</th>
-                                    <th className="p-4">Transporter</th>
-                                    <th className="p-4">Start</th>
-                                    <th className="p-4">End</th>
-                                    <th className="p-4">Duration</th>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
-                                        <div className="flex items-center gap-1">Status {sortConfig?.key === 'status' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-4 text-gray-300">Dock/Dest</th>
+                                    <th className="p-4 text-gray-300">Transporter</th>
+                                    <th className="p-4 text-gray-300">Start</th>
+                                    <th className="p-4 text-gray-300">End</th>
+                                    <th className="p-4 text-gray-300">Duration</th>
+                                    <th className="p-0">
+                                        <button
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
+                                            onClick={() => handleSort('status')}
+                                        >
+                                            Status {sortConfig?.key === 'status' && <ArrowUpDown size={14} className="text-blue-400" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('supervisorName')}>
-                                        <div className="flex items-center gap-1">Supervisor {sortConfig?.key === 'supervisorName' && <ArrowUpDown size={12} />}</div>
+                                    <th className="p-0">
+                                        <button
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-slate-700 transition-colors cursor-pointer text-left uppercase"
+                                            onClick={() => handleSort('supervisorName')}
+                                        >
+                                            Supervisor {sortConfig?.key === 'supervisorName' && <ArrowUpDown size={14} className="text-blue-400" />}
+                                        </button>
                                     </th>
-                                    <th className="p-4 text-center w-24">Actions</th>
+                                    <th className="p-4 text-center w-24 text-gray-300">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
