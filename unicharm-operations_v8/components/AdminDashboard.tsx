@@ -566,39 +566,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
                     <div className="overflow-x-auto rounded-lg border border-slate-100">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
+                            <thead className="bg-gray-100 text-slate-700 font-bold uppercase text-xs border-b border-gray-200">
                                 <tr>
-                                    <th className="p-2">
+                                    <th className="p-0">
                                         <button
-                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('username')}
                                         >
-                                            User {sortConfig?.key === 'username' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                            User {sortConfig?.key === 'username' && <ArrowUpDown size={14} className="text-blue-600" />}
                                         </button>
                                     </th>
-                                    <th className="p-2">
+                                    <th className="p-0">
                                         <button
-                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('fullName')}
                                         >
-                                            Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                            Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={14} className="text-blue-600" />}
                                         </button>
                                     </th>
-                                    <th className="p-2">
+                                    <th className="p-0">
                                         <button
-                                            className="w-full h-full flex items-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer text-left font-bold"
+                                            type="button"
+                                            className="w-full h-full flex items-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer text-left uppercase"
                                             onClick={() => handleSort('role')}
                                         >
-                                            Role {sortConfig?.key === 'role' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                            Role {sortConfig?.key === 'role' && <ArrowUpDown size={14} className="text-blue-600" />}
                                         </button>
                                     </th>
                                     <th className="p-4">Email</th>
-                                    <th className="p-2 text-center">
+                                    <th className="p-0 text-center">
                                         <button
-                                            className="w-full h-full flex items-center justify-center gap-1 p-2 rounded hover:bg-slate-200 transition-colors cursor-pointer font-bold"
+                                            type="button"
+                                            className="w-full h-full flex items-center justify-center gap-2 p-4 hover:bg-white transition-colors cursor-pointer uppercase"
                                             onClick={() => handleSort('isApproved')}
                                         >
-                                            Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={12} className="text-blue-600" />}
+                                            Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={14} className="text-blue-600" />}
                                         </button>
                                     </th>
                                     <th className="p-4 text-center w-40">Actions</th>
