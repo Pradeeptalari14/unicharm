@@ -766,6 +766,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                     <th className="p-4">Transporter</th>
                                     <th className="p-4">Start</th>
                                     <th className="p-4">End</th>
+                                    <th className="p-4">Duration</th>
                                     <th className="p-4">Status</th>
                                     <th className="p-4">Supervisor</th>
                                     <th className="p-4 text-center w-24">Actions</th>
@@ -774,34 +775,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <tbody className="divide-y divide-slate-100 bg-white">
                                 {sheets
                                     .filter(s => s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase()))
-                                    .map(s => (
-                                        <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-slate-50 transition cursor-pointer group">
-                                            <td className="p-4 font-mono font-medium text-blue-600 group-hover:underline decoration-blue-200 underline-offset-4">{s.id}</td>
-                                            <td className="p-4 text-slate-500">{s.date}</td>
-                                            <td className="p-4 text-slate-700 font-medium">{s.loadingDockNo} / {s.destination}</td>
-                                            <td className="p-4 text-slate-500">{s.transporter || '-'}</td>
-                                            <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingStartTime || '-'}</td>
-                                            <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingEndTime || '-'}</td>
-                                            <td className="p-4">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide
+                                    .map(s => {
+                                        // Duration Calculation Helper
+                                        let duration = '-';
+                                        if (s.loadingStartTime && s.loadingEndTime) {
+                                            const start = new Date(`1970-01-01T${s.loadingStartTime}`);
+                                            const end = new Date(`1970-01-01T${s.loadingEndTime}`);
+                                            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                                const diffMs = end.getTime() - start.getTime();
+                                                const diffMins = Math.round(diffMs / 60000);
+                                                if (diffMins >= 0) {
+                                                    const hrs = Math.floor(diffMins / 60);
+                                                    const mins = diffMins % 60;
+                                                    duration = `${hrs}h ${mins}m`;
+                                                }
+                                            }
+                                        }
+
+                                        return (
+                                            <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-slate-50 transition cursor-pointer group">
+                                                <td className="p-4 font-mono font-medium text-blue-600 group-hover:underline decoration-blue-200 underline-offset-4">{s.id}</td>
+                                                <td className="p-4 text-slate-500">{s.date}</td>
+                                                <td className="p-4 text-slate-700 font-medium">{s.loadingDockNo} / {s.destination}</td>
+                                                <td className="p-4 text-slate-500">{s.transporter || '-'}</td>
+                                                <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingStartTime || '-'}</td>
+                                                <td className="p-4 text-slate-600 font-mono text-xs">{s.loadingEndTime || '-'}</td>
+                                                <td className="p-4 text-slate-800 font-bold text-xs">{duration}</td>
+                                                <td className="p-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide
                                         ${s.status === 'LOCKED' ? 'bg-orange-100 text-orange-700' :
-                                                        s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                                                            'bg-slate-100 text-slate-600'}`}>
-                                                    {s.status}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-slate-700">{s.supervisorName}</td>
-                                            <td className="p-4 text-center">
-                                                <button
-                                                    onClick={(e) => handleDelete(e, s.id)}
-                                                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                    title="Delete Sheet"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                            s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                                                                'bg-slate-100 text-slate-600'}`}>
+                                                        {s.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-slate-700">{s.supervisorName}</td>
+                                                <td className="p-4 text-center">
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, s.id)}
+                                                        className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                        title="Delete Sheet"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
                                 {sheets.length === 0 && (
                                     <tr><td colSpan={7} className="p-12 text-center text-slate-400 italic">No records found.</td></tr>
                                 )}
