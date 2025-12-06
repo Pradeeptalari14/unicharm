@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../AppContext';
-import { SheetData, SheetStatus, LoadingItemData, AdditionalItem } from '../types';
+import { SheetData, SheetStatus, LoadingItemData, AdditionalItem, Role } from '../types';
 import {
     Camera,
     Printer,
@@ -103,7 +103,12 @@ export const LoadingSheet: React.FC<Props> = ({ sheet, onClose, initialPreview =
         setSealNo(sheet.sealNo || '');
         setRegSerialNo(sheet.regSerialNo || '');
 
-        setSvName(sheet.loadingSvName || '');
+        // Auto-populate Loading Supervisor Name if empty and current user is Loading Supervisor
+        if (!sheet.loadingSvName && currentUser?.role === Role.LOADING_SUPERVISOR) {
+            setSvName(currentUser.fullName || currentUser.username);
+        } else {
+            setSvName(sheet.loadingSvName || '');
+        }
         setSvSign(sheet.loadingSupervisorSign || '');
         setSlSign(sheet.slSign || '');
         setDeoSign(sheet.deoSign || '');
