@@ -42,7 +42,20 @@ const formatDate = (dateStr?: string) => {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initialViewMode, onViewSheet, onNavigate }) => {
     const { users, approveUser, deleteUser, toggleUserActive, sheets, auditLogs, deleteSheet, register, resetPassword, currentUser } = useApp();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'tracking' | 'users' | 'database'>('dashboard');
+
+    // Map initialViewMode (from App router) to internal tab state
+    const getInitialTab = (mode: string) => {
+        if (mode === 'users') return 'users';
+        if (mode === 'database') return 'database';
+        return 'dashboard'; // 'analytics' -> 'dashboard'
+    };
+
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'tracking' | 'users' | 'database'>(getInitialTab(initialViewMode));
+
+    // Sync tab if prop changes (optional, but good for reliable navigation)
+    React.useEffect(() => {
+        setActiveTab(getInitialTab(initialViewMode));
+    }, [initialViewMode]);
     const [searchTerm, setSearchTerm] = useState('');
 
     // --- USER MANAGEMENT STATE ---
