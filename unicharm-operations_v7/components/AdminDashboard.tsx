@@ -473,7 +473,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Database className="text-blue-600" /> Database Registry</h2>
                                     <p className="text-sm text-gray-500 mt-1">Full record of all operational sheets.</p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
+                                    {/* Admin View As Filter for Database */}
+                                    {currentUser?.role === Role.ADMIN && (
+                                        <select
+                                            className="border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm mr-2"
+                                            value={dashboardRoleFilter}
+                                            onChange={(e) => setDashboardRoleFilter(e.target.value as any)}
+                                        >
+                                            <option value={Role.ADMIN}>All Operations</option>
+                                            <option value={Role.STAGING_SUPERVISOR}>Staging Overview</option>
+                                            <option value={Role.LOADING_SUPERVISOR}>Loading Overview</option>
+                                        </select>
+                                    )}
+
                                     <button onClick={downloadCSV} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all">
                                         <Download size={16} /> Export to Excel
                                     </button>
@@ -508,7 +521,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {sheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
+                                        {visibleSheets.filter(s => JSON.stringify(s).toLowerCase().includes(searchTerm.toLowerCase())).map(s => (
                                             <tr key={s.id} onClick={() => onViewSheet(s)} className="hover:bg-blue-50 transition cursor-pointer group">
                                                 <td className="p-2 border border-gray-200 font-mono text-blue-600 font-bold whitespace-nowrap">{s.id}</td>
                                                 <td className="p-2 border border-gray-200 whitespace-nowrap">{s.date}</td>
