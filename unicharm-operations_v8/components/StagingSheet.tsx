@@ -21,7 +21,7 @@ export const StagingSheet: React.FC<Props> = ({ existingSheet, onCancel, onLock,
 
     // Header State
     const [shift, setShift] = useState(existingSheet?.shift || 'A');
-    const [date, setDate] = useState(existingSheet?.date || new Date().toLocaleDateString());
+    const [date, setDate] = useState(existingSheet?.date || new Date().toLocaleDateString('en-US'));
     const [destination, setDestination] = useState(existingSheet?.destination || '');
 
     // Auto-fill Supervisor and Emp Code from Current User (Creator) if new, otherwise preserve existing
