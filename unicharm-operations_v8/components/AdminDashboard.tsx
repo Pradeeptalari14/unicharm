@@ -2,7 +2,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../AppContext';
 import { Role, SheetStatus, SheetData } from '../types';
-import { StagingOverview, LoadingOverview } from './DashboardOverviews';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line, CartesianGrid
@@ -251,12 +250,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     )}
                 </div>
 
-
-
                 {/* --- DEPARTMENT OVERVIEWS --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <StagingOverview stats={stats} onNavigate={(filter) => onNavigate?.('staging')} />
-                    <LoadingOverview stats={stats} onNavigate={(filter) => onNavigate?.('loading')} />
+                    {/* Staging Overview */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><Clipboard size={18} /></div>
+                            <h3 className="font-bold text-slate-700">Staging Overview</h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Drafts</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.draft}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">New Today</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.createdToday}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.stagingStaff}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Loading Overview */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Truck size={18} /></div>
+                            <h3 className="font-bold text-slate-700">Loading Overview</h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Active</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.locked}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Done Today</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.completedToday}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Staff</p>
+                                <p className="text-xl font-bold text-slate-800">{stats.loadingStaff}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Charts Row 1 */}

@@ -1,43 +1,29 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useApp } from './AppContext';
 import { Auth } from './components/Auth';
 import { Layout } from './components/Layout';
 import { AdminDashboard } from './components/AdminDashboard';
 import { StagingSheet } from './components/StagingSheet';
 import { LoadingSheet } from './components/LoadingSheet';
-import { StagingOverview, LoadingOverview } from './components/DashboardOverviews';
 import { Role, SheetStatus, SheetData } from './types';
-import { PlusCircle, Search, Edit3, Eye, Lock, Printer, XCircle } from 'lucide-react';
+import { PlusCircle, Search, Edit3, Eye, Lock, Printer } from 'lucide-react';
 
 const App = () => {
-    const { currentUser, users, sheets } = useApp();
+    const { currentUser, sheets } = useApp();
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+    // We keep a temporary state for creating NEW sheets which don't have an ID in the store yet
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [openInPreviewMode, setOpenInPreviewMode] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     if (!currentUser) {
         return <Auth />;
     }
 
-    // --- STATS CALCULATION (Shared) ---
-    const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
-        return {
-            draft: sheets.filter(s => s.status === SheetStatus.DRAFT).length,
-            locked: sheets.filter(s => s.status === SheetStatus.LOCKED).length,
-            createdToday: sheets.filter(s => s.date === todayStr).length,
-            completedToday: sheets.filter(s => s.status === SheetStatus.COMPLETED && s.date === todayStr).length,
-            stagingStaff: users.filter(u => u.role === Role.STAGING_SUPERVISOR && u.isApproved).length,
-            loadingStaff: users.filter(u => u.role === Role.LOADING_SUPERVISOR && u.isApproved).length
-        };
-    }, [sheets, users]);
-
-
+    // Helper to get the actual up-to-date sheet object from global state
     const activeSheet = selectedSheetId ? sheets.find(s => s.id === selectedSheetId) : null;
 
     const handleNavigate = (page: string) => {
@@ -46,16 +32,6 @@ const App = () => {
         setIsCreatingNew(false);
         setIsEditing(false);
         setOpenInPreviewMode(false);
-        setStatusFilter(null); // Reset filter on nav
-    };
-
-    const handleSwitchToOverview = (filterType: string) => {
-        if (filterType.startsWith('STAFF')) {
-            // If we had a staff view we'd go there, for now just clear filter
-            alert(`Active Staff: ${filterType === 'STAFF_STAGING' ? stats.stagingStaff : stats.loadingStaff}`);
-            return;
-        }
-        setStatusFilter(filterType);
     };
 
     const handleCreateSheet = () => {
@@ -72,11 +48,13 @@ const App = () => {
         setIsEditing(true);
         setOpenInPreviewMode(false);
 
+        // If accessing from Staging Dashboard, always show Staging View (Read-only if locked)
         if (source === 'staging') {
             setCurrentPage('staging-editor');
             return;
         }
 
+        // Default Logic (Admin / Loading Dashboards)
         if (sheet.status === SheetStatus.DRAFT) {
             setCurrentPage('staging-editor');
         } else {
@@ -105,18 +83,22 @@ const App = () => {
                 return <AdminDashboard viewMode="database" onViewSheet={(s) => handleViewSheet(s)} />;
 
             case 'staging-editor':
+                // If creating new, we pass undefined. If editing, we pass the LIVE activeSheet.
                 return <StagingSheet
-                    key={isCreatingNew ? 'new' : activeSheet?.id}
+                    key={isCreatingNew ? 'new' : activeSheet?.id} // Force re-render on ID change
                     existingSheet={isCreatingNew ? undefined : activeSheet || undefined}
                     onCancel={() => handleNavigate('staging')}
-                    onLock={(updatedSheet) => { handleNavigate('staging'); }}
+                    onLock={(updatedSheet) => {
+                        // After locking, usually navigate back or to loading
+                        handleNavigate('staging');
+                    }}
                     initialPreview={openInPreviewMode}
                 />;
 
             case 'loading-editor':
                 if (!activeSheet) return <div>Error loading sheet data. Please try again.</div>;
                 return <LoadingSheet
-                    key={activeSheet.id}
+                    key={activeSheet.id} // Force re-render on ID change
                     sheet={activeSheet}
                     onClose={() => handleNavigate('loading')}
                     initialPreview={openInPreviewMode}
@@ -124,44 +106,23 @@ const App = () => {
 
             case 'staging':
             case 'loading':
+                // List View Logic
                 const isStagingView = currentPage === 'staging';
                 const filteredSheets = sheets.filter(s => {
                     const matchesSearch = s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase());
-
-                    // Apply Status/Date Filter from Clickable Cards
-                    if (statusFilter) {
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        if (statusFilter === 'DRAFT' && s.status !== SheetStatus.DRAFT) return false;
-                        if (statusFilter === 'LOCKED' && s.status !== SheetStatus.LOCKED) return false;
-                        if (statusFilter === 'TODAY_CREATED' && s.date !== todayStr) return false;
-                        if (statusFilter === 'TODAY_COMPLETED' && (s.status !== SheetStatus.COMPLETED || s.date !== todayStr)) return false;
-                    }
-
                     if (isStagingView) {
-                        return matchesSearch;
+                        return matchesSearch; // Show all for staging history, or filter if needed
                     } else {
+                        // Loading View: Only show Locked (Ready for Loading) or Completed
                         return matchesSearch && (s.status === SheetStatus.LOCKED || s.status === SheetStatus.COMPLETED);
                     }
                 });
 
                 return (
                     <div className="space-y-6">
-                        {/* ROLE BASED OVERVIEWS */}
-                        {isStagingView ? (
-                            <StagingOverview stats={stats} onNavigate={handleSwitchToOverview} />
-                        ) : (
-                            <LoadingOverview stats={stats} onNavigate={handleSwitchToOverview} />
-                        )}
-
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                            <div className="relative w-full md:w-96 flex">
-                                {statusFilter && (
-                                    <button onClick={() => setStatusFilter(null)} className="mr-2 text-red-500 hover:text-red-700 whitespace-nowrap text-xs font-bold flex items-center gap-1">
-                                        <XCircle size={16} /> Clear "{statusFilter}"
-                                    </button>
-                                )}
+                            <div className="relative w-full md:w-96">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pl-8 pointer-events-none"></div>
                                 <input
                                     type="text"
                                     placeholder="Search by Sheet ID or Supervisor..."
