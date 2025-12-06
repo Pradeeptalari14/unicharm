@@ -60,6 +60,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
         const locked = sheets.filter(s => s.status === SheetStatus.LOCKED).length;
         const draft = sheets.filter(s => s.status === SheetStatus.DRAFT).length;
 
+        // Pending Users
+        const pendingUsersCount = users.filter(u => !u.isApproved).length;
+
         // Daily Volume (Last 7 days)
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
@@ -93,8 +96,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
             { name: 'Done', value: completed, color: '#22c55e' }
         ];
 
-        return { total, completed, locked, draft, volumeTrend, supervisorData, pieData };
-    }, [sheets]);
+        return { total, completed, locked, draft, volumeTrend, supervisorData, pieData, pendingUsersCount };
+    }, [sheets, users]);
 
     // --- HANDLERS ---
     const handleDeleteUser = (e: React.MouseEvent, id: string, name: string) => {
@@ -151,14 +154,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                     <div className="mt-2 flex items-center text-xs text-orange-600 font-medium"><Truck size={14} className="mr-1" /> Currently Loading</div>
                                 </div>
                             </div>
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-                                <div className="relative z-10">
-                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Users</p>
-                                    <h3 className="text-3xl font-extrabold text-purple-600">{users.length}</h3>
-                                    <div className="mt-2 flex items-center text-xs text-purple-600 font-medium"><UserIcon size={14} className="mr-1" /> Active Accounts</div>
+
+                            {/* Intelligent Users Card: Shows Pending if any, else Total */}
+                            {analytics.pendingUsersCount > 0 ? (
+                                <div
+                                    className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all"
+                                    onClick={() => setActiveTab('users')}
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                    <div className="relative z-10">
+                                        <p className="text-red-600 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><ShieldAlert size={12} /> Action Required</p>
+                                        <h3 className="text-3xl font-extrabold text-red-700">{analytics.pendingUsersCount}</h3>
+                                        <div className="mt-2 flex items-center text-xs text-red-600 font-bold"><UserIcon size={14} className="mr-1" /> Users Pending Approval</div>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                                    <div className="relative z-10">
+                                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Users</p>
+                                        <h3 className="text-3xl font-extrabold text-purple-600">{users.length}</h3>
+                                        <div className="mt-2 flex items-center text-xs text-purple-600 font-medium"><UserIcon size={14} className="mr-1" /> Active Accounts</div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Charts Row 1 */}
@@ -340,38 +359,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {users.map(user => (
-                                            <tr key={user.id} className="hover:bg-gray-50 transition">
-                                                <td className="p-4">
-                                                    <div className="font-bold text-gray-900">{user.fullName || user.username}</div>
-                                                    <div className="text-xs text-gray-500">{user.email}</div>
-                                                </td>
-                                                <td className="p-4"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-600">{user.role}</span></td>
-                                                <td className="p-4">
-                                                    {user.isApproved ? (
-                                                        user.isActive !== false ?
-                                                            <span className="text-green-600 flex items-center gap-1 text-xs font-bold"><Check size={12} /> Active</span> :
-                                                            <span className="text-gray-500 flex items-center gap-1 text-xs font-bold"><X size={12} /> Inactive</span>
-                                                    ) : <span className="text-orange-500 flex items-center gap-1 text-xs font-bold"><ShieldAlert size={12} /> Pending</span>}
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <div className="flex justify-center gap-2">
-                                                        {!user.isApproved ? (
-                                                            <>
-                                                                <button onClick={(e) => approveUser(user.id, true)} className="text-green-600 hover:bg-green-50 p-1 rounded font-bold text-xs uppercase">Approve</button>
-                                                                <button onClick={(e) => approveUser(user.id, false)} className="text-red-600 hover:bg-red-50 p-1 rounded font-bold text-xs uppercase">Reject</button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <button onClick={() => toggleUserActive(user.id, user.isActive === false)} className="text-gray-400 hover:text-blue-600 p-2 rounded" title="Toggle Active"><UserCheck size={16} /></button>
-                                                                <button onClick={(e) => { e.stopPropagation(); setResetData({ id: user.id, username: user.username, newPass: '' }); setResetPasswordOpen(true); }} className="text-gray-400 hover:text-orange-600 p-2 rounded" title="Reset Password"><Key size={16} /></button>
-                                                                <button onClick={(e) => handleDeleteUser(e, user.id, user.username)} className="text-gray-400 hover:text-red-600 p-2 rounded" title="Delete"><Trash2 size={16} /></button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {users
+                                            .slice()
+                                            .sort((a, b) => Number(Boolean(a.isApproved)) - Number(Boolean(b.isApproved))) // Pending (false) first
+                                            .map(user => (
+                                                <tr key={user.id} className={`hover:bg-gray-50 transition ${!user.isApproved ? 'bg-red-50/50' : ''}`}>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-gray-900">{user.fullName || user.username}</div>
+                                                        <div className="text-xs text-gray-500">{user.email}</div>
+                                                    </td>
+                                                    <td className="p-4"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-semibold text-gray-600">{user.role}</span></td>
+                                                    <td className="p-4">
+                                                        {user.isApproved ? (
+                                                            user.isActive !== false ?
+                                                                <span className="text-green-600 flex items-center gap-1 text-xs font-bold"><Check size={12} /> Active</span> :
+                                                                <span className="text-gray-500 flex items-center gap-1 text-xs font-bold"><X size={12} /> Inactive</span>
+                                                        ) : <span className="text-orange-500 flex items-center gap-1 text-xs font-bold"><ShieldAlert size={12} /> Pending</span>}
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <div className="flex justify-center gap-2">
+                                                            {!user.isApproved ? (
+                                                                <>
+                                                                    <button onClick={(e) => approveUser(user.id, true)} className="text-green-600 hover:bg-green-50 p-1 rounded font-bold text-xs uppercase">Approve</button>
+                                                                    <button onClick={(e) => approveUser(user.id, false)} className="text-red-600 hover:bg-red-50 p-1 rounded font-bold text-xs uppercase">Reject</button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <button onClick={() => toggleUserActive(user.id, user.isActive === false)} className="text-gray-400 hover:text-blue-600 p-2 rounded" title="Toggle Active"><UserCheck size={16} /></button>
+                                                                    <button onClick={(e) => { e.stopPropagation(); setResetData({ id: user.id, username: user.username, newPass: '' }); setResetPasswordOpen(true); }} className="text-gray-400 hover:text-orange-600 p-2 rounded" title="Reset Password"><Key size={16} /></button>
+                                                                    <button onClick={(e) => handleDeleteUser(e, user.id, user.username)} className="text-gray-400 hover:text-red-600 p-2 rounded" title="Delete"><Trash2 size={16} /></button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -458,9 +480,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                 </button>
                 <button
                     onClick={() => setActiveTab('users')}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-bold text-sm ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'} relative`}
                 >
                     <UserIcon size={18} /> User Access
+                    {analytics.pendingUsersCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>}
                 </button>
                 <button
                     onClick={() => setActiveTab('database')}
