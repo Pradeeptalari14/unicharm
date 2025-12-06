@@ -556,6 +556,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                         onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (Optional)</label>
+                                    <input
+                                        type="email"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                                        placeholder="john@example.com"
+                                        value={newUser.email || ''}
+                                        onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                    />
+                                </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
