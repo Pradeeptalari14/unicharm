@@ -69,18 +69,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
     // Filter sheets based on user role (Strict access control)
     const visibleSheets = useMemo(() => {
         if (!currentUser) return [];
-        if (currentUser.role === Role.ADMIN || currentUser.role === Role.VIEWER) return sheets; // Viewers can see all? Or restrict? Defaulting to all for Viewer for now, but strictly limited for Supervisors as requested.
+        if (currentUser.role === Role.ADMIN || currentUser.role === Role.VIEWER) return sheets;
 
         // For Staging/Loading Supervisors, ONLY show sheets where they are involved
         if (currentUser.role === Role.STAGING_SUPERVISOR) {
             return sheets.filter(s => s.supervisorName === currentUser.fullName || s.supervisorName === currentUser.username);
         }
         if (currentUser.role === Role.LOADING_SUPERVISOR) {
-            return sheets.filter(s =>
-                s.loadingSvName === currentUser.fullName ||
-                s.loadingSvName === currentUser.username ||
-                s.completedBy === currentUser.username // ALSO include sheets explicitly completed by this user
-            );
+            // FIX: Relaxed filter to show ALL Locked/Completed sheets to Loading Supervisor
+            return sheets.filter(s => s.status === SheetStatus.LOCKED || s.status === SheetStatus.COMPLETED);
         }
         return [];
     }, [sheets, currentUser]);
@@ -96,15 +93,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
         const pendingUsersCount = currentUser?.role === Role.ADMIN ? users.filter(u => !u.isApproved).length : 0;
 
         // Daily Volume (Last 7 days) - Calculated from visibleSheets
+        // FIX: Use Locale Date (YYYY-MM-DD) instead of UTC to ensure charts match local tables
         const last7Days = [...Array(7)].map((_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            return d.toISOString().split('T')[0];
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
         }).reverse();
 
         const volumeTrend = last7Days.map(date => {
             return {
                 date: new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }),
+                // Compare against the substring (YYYY-MM-DD) which is first 10 chars of ISO string if stored in UTC or similar
+                // But simplified: effectively matching the prefix string in the DB
                 completed: visibleSheets.filter(s => s.status === SheetStatus.COMPLETED && s.completedAt?.startsWith(date)).length,
                 created: visibleSheets.filter(s => s.createdAt.startsWith(date)).length
             };
@@ -562,7 +563,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                                 <td className="p-2 border border-gray-200 whitespace-nowrap text-gray-600">{formatDate(s.completedAt)}</td>
 
                                                 <td className="p-2 border border-gray-200 text-center">
-                                                    <button onClick={(e) => { e.stopPropagation(); deleteSheet(s.id, 'Admin Delete'); }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
+                                                    <button onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const reason = window.prompt("To DELETE this sheet, you must provide a reason:");
+                                                        if (reason && reason.trim()) {
+                                                            if (window.confirm(`Are you sure you want to PERMANENTLY delete Sheet ${s.id}?\nReason: ${reason}`)) {
+                                                                deleteSheet(s.id, reason);
+                                                            }
+                                                        }
+                                                    }} className="text-gray-400 hover:text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14} /></button>
                                                 </td>
                                             </tr>
                                         ))}
