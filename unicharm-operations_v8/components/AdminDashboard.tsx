@@ -507,7 +507,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <UserIcon className="text-blue-600" /> User Administration
+                                <UserIcon className="text-blue-600" /> User Administration <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full ml-2">v8.3 (High Contrast)</span>
                             </h2>
                             <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
