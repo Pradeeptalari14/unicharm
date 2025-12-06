@@ -42,8 +42,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
       <button
         onClick={() => onNavigate(page)}
         className={`group w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg mx-2 w-[calc(100%-16px)] ${isActive
-            ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+          ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
           }`}
       >
         <Icon size={20} className={`transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
@@ -105,6 +105,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
             <div>
               <h1 className="text-base font-bold text-slate-800 leading-tight">Unicharm</h1>
               <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">SCM Operations</p>
+              <p className="text-[9px] text-green-600 font-bold mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                v5.1 Mobile Active
+              </p>
             </div>
           </div>
           {/* Mobile Close Button */}
