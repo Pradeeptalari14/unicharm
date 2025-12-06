@@ -479,7 +479,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                 }
                 return false;
             })
-            .sort((a, b) => (a.isApproved === b.isApproved) ? 0 : a.isApproved ? 1 : -1);
+            .sort((a, b) => {
+                // 1. Dynamic Sort (User Clicked Header)
+                if (sortConfig) {
+                    const { key, direction } = sortConfig;
+                    const valA = a[key as keyof typeof a];
+                    const valB = b[key as keyof typeof b];
+
+                    if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+                        // Boolean Sort (e.g. Status)
+                        return direction === 'asc' ? (valA === valB ? 0 : valA ? 1 : -1) : (valA === valB ? 0 : valA ? -1 : 1);
+                    }
+
+                    const strA = String(valA || '').toLowerCase();
+                    const strB = String(valB || '').toLowerCase();
+                    const comparison = strA.localeCompare(strB, undefined, { numeric: true });
+                    return direction === 'asc' ? comparison : -comparison;
+                }
+
+                // 2. Default Sort: Pending Users First
+                return (a.isApproved === b.isApproved) ? 0 : !a.isApproved ? -1 : 1;
+            });
 
         return (
             <div className="space-y-6">
@@ -548,11 +568,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50/80 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th className="p-4">User</th>
-                                    <th className="p-4">Full Name</th>
-                                    <th className="p-4">Role</th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('username')}>
+                                        <div className="flex items-center gap-1">User {sortConfig?.key === 'username' && <ArrowUpDown size={12} />}</div>
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('fullName')}>
+                                        <div className="flex items-center gap-1">Full Name {sortConfig?.key === 'fullName' && <ArrowUpDown size={12} />}</div>
+                                    </th>
+                                    <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('role')}>
+                                        <div className="flex items-center gap-1">Role {sortConfig?.key === 'role' && <ArrowUpDown size={12} />}</div>
+                                    </th>
                                     <th className="p-4">Email</th>
-                                    <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('isApproved')}>
+                                        <div className="flex items-center justify-center gap-1">Status {sortConfig?.key === 'isApproved' && <ArrowUpDown size={12} />}</div>
+                                    </th>
                                     <th className="p-4 text-center w-40">Actions</th>
                                 </tr>
                             </thead>
