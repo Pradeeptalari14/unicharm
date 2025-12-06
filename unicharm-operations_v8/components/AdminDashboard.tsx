@@ -257,8 +257,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
                 {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
                 {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
+                {/* --- STANDARD KPIS (Fixed for now, can be widgets later) --- */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Existing KPI Cards... keeping them as "Core" for now */}
+                    {/* KPI 1: Total Sheets (Visible to All) */}
                     <div
                         onClick={() => onNavigate?.('database')}
                         className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
@@ -271,18 +272,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <div className="p-2 bg-slate-100 rounded-lg text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><FileSpreadsheet size={18} /></div>
                         </div>
                     </div>
-                    <div
-                        onClick={() => onNavigate?.('loading')}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-orange-300 transition-colors cursor-pointer hover:shadow-md group"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-orange-500 transition-colors">Active Loads</p>
-                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.locked}</h3>
+
+                    {/* KPI 2: Active Loads (Visible to Loading & Admin Only) */}
+                    {showLoading && (
+                        <div
+                            onClick={() => onNavigate?.('loading')}
+                            className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-orange-300 transition-colors cursor-pointer hover:shadow-md group"
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-orange-500 transition-colors">Active Loads</p>
+                                    <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.locked}</h3>
+                                </div>
+                                <div className="p-2 bg-orange-100 rounded-lg text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors"><Truck size={18} /></div>
                             </div>
-                            <div className="p-2 bg-orange-100 rounded-lg text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors"><Truck size={18} /></div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* KPI 3: Completed Today (Visible to All) */}
                     <div
                         onClick={() => onNavigate?.('database')}
                         className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-green-300 transition-colors cursor-pointer hover:shadow-md group"
@@ -295,18 +302,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors"><CheckCircle2 size={18} /></div>
                         </div>
                     </div>
-                    <div
-                        onClick={() => onNavigate?.('admin')}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-500 transition-colors">Staff Active</p>
-                                <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.stagingStaff + stats.loadingStaff}</h3>
+
+                    {/* KPI 4: Staff Active (Visible to Admin Only - or segregated count) */}
+                    {isAdmin && (
+                        <div
+                            onClick={() => onNavigate?.('admin')}
+                            className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer hover:shadow-md group"
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-500 transition-colors">Total Staff Active</p>
+                                    <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.stagingStaff + stats.loadingStaff}</h3>
+                                </div>
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors"><UserIcon size={18} /></div>
                             </div>
-                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors"><UserIcon size={18} /></div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* --- DEPARTMENT OVERVIEWS (Role Based) --- */}
@@ -390,11 +401,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                         {sortedWidgets.map((def, idx) => {
                             if (!def) return null;
                             const WidgetComponent = def.component;
-                            // Span full width if defined
                             const colSpan = def.defaultSize === 'large' || def.defaultSize === 'full' ? 'lg:col-span-2' : '';
 
                             return (
-                                <div key={def.id} className={`bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group hover:shadow-md transition-shadow \${colSpan}`}>
+                                <div key={def.id} className={`bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative group hover:shadow-md transition-shadow ${colSpan}`}>
                                     <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                                         <div>
                                             <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
@@ -431,6 +441,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
 
     // --- VIEW 2: USERS PANEL ---
     if (viewMode === 'users') {
+        const filteredUsers = users
+            .filter(u => {
+                const searchMatch = u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (u.fullName && u.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                // STRICT ROLE SEGREGATION
+                if (currentUser?.role === Role.ADMIN) return searchMatch; // Admin sees all
+                if (currentUser?.role === Role.STAGING_SUPERVISOR) {
+                    return searchMatch && u.role === Role.STAGING_SUPERVISOR; // Staging sees Staging
+                }
+                if (currentUser?.role === Role.LOADING_SUPERVISOR) {
+                    return searchMatch && u.role === Role.LOADING_SUPERVISOR; // Loading sees Loading
+                }
+                return false;
+            })
+            .sort((a, b) => (a.isApproved === b.isApproved) ? 0 : a.isApproved ? 1 : -1);
+
         return (
             <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
@@ -439,7 +466,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                 <UserIcon className="text-blue-600" /> User Administration
                             </h2>
-                            <p className="text-sm text-gray-500">Approve new registrations and manage existing accounts.</p>
+                            <p className="text-sm text-gray-500">Manage staff and permissions.</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
@@ -474,80 +501,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
-                                {users
-                                    .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || (u.fullName && u.fullName.toLowerCase().includes(searchTerm.toLowerCase())))
-                                    .sort((a, b) => (a.isApproved === b.isApproved) ? 0 : a.isApproved ? 1 : -1) // Pending first
-                                    .map(user => (
-                                        <tr key={user.id} className={`hover:bg-slate-50 transition group ${!user.isApproved ? 'bg-orange-50/30' : ''}`}>
-                                            <td className="p-4 font-medium text-slate-900 flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                                                    {user.username.charAt(0).toUpperCase()}
-                                                </div>
-                                                {user.username}
-                                            </td>
-                                            <td className="p-4 text-slate-700">{user.fullName || '-'}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider
+                                {filteredUsers.map(user => (
+                                    <tr key={user.id} className={`hover:bg-slate-50 transition group ${!user.isApproved ? 'bg-orange-50/30' : ''}`}>
+                                        <td className="p-4 font-medium text-slate-900 flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
+                                                {user.username.charAt(0).toUpperCase()}
+                                            </div>
+                                            {user.username}
+                                        </td>
+                                        <td className="p-4 text-slate-700">{user.fullName || '-'}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider
                                         ${user.role === Role.ADMIN ? 'bg-purple-100 text-purple-700' :
-                                                        user.role === Role.LOADING_SUPERVISOR ? 'bg-orange-100 text-orange-700' :
-                                                            user.role === Role.STAGING_SUPERVISOR ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-slate-100 text-slate-600'
-                                                    }`}>
-                                                    {user.role.replace('_', ' ')}
+                                                    user.role === Role.LOADING_SUPERVISOR ? 'bg-orange-100 text-orange-700' :
+                                                        user.role === Role.STAGING_SUPERVISOR ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                {user.role.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-slate-500 text-xs">{user.email || 'N/A'}</td>
+                                        <td className="p-4 text-center">
+                                            {user.isApproved ? (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
                                                 </span>
-                                            </td>
-                                            <td className="p-4 text-slate-500 text-xs">{user.email || 'N/A'}</td>
-                                            <td className="p-4 text-center">
-                                                {user.isApproved ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
-                                                        <ShieldAlert size={12} /> Pending Approval
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                {!user.isApproved ? (
-                                                    <div className="flex justify-center gap-2">
-                                                        <button
-                                                            onClick={(e) => handleApprove(e, user.id)}
-                                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
-                                                            title="Approve User"
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => handleReject(e, user.id)}
-                                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
-                                                            title="Reject User"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={(e) => openResetPassword(e, user)}
-                                                            className="text-slate-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
-                                                            title="Reset Password"
-                                                        >
-                                                            <Key size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => handleUserDelete(e, user.id, user.username)}
-                                                            className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
-                                                            title="Delete User"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                {users.length === 0 && (
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
+                                                    <ShieldAlert size={12} /> Pending Approval
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            {!user.isApproved ? (
+                                                <div className="flex justify-center gap-2">
+                                                    <button
+                                                        onClick={(e) => handleApprove(e, user.id)}
+                                                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
+                                                        title="Approve User"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleReject(e, user.id)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md shadow-sm transition-all text-xs font-bold"
+                                                        title="Reject User"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => openResetPassword(e, user)}
+                                                        className="text-slate-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                                                        title="Reset Password"
+                                                    >
+                                                        <Key size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleUserDelete(e, user.id, user.username)}
+                                                        className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                                        title="Delete User"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredUsers.length === 0 && (
                                     <tr><td colSpan={6} className="p-12 text-center text-slate-400 italic">No users found matching your search.</td></tr>
                                 )}
                             </tbody>
