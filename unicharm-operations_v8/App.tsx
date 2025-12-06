@@ -9,25 +9,68 @@ import { LoadingSheet } from './components/LoadingSheet';
 import { Role, SheetStatus, SheetData } from './types';
 import { PlusCircle, Search, Edit3, Eye, Lock, Printer } from 'lucide-react';
 
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+// Basic Error Boundary
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("Uncaught error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-8 text-center text-red-600">
+                    <h2 className="text-xl font-bold mb-2">Something went wrong.</h2>
+                    <p className="text-sm bg-red-50 p-4 rounded border border-red-200 inline-block text-left">
+                        {this.state.error?.toString()}
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="block mx-auto mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Reload Page
+                    </button>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 const App = () => {
+    // ... existing hook calls ...
     const { currentUser, sheets } = useApp();
     const [currentPage, setCurrentPage] = useState('dashboard');
+    // ... rest of state ...
     const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
-    // We keep a temporary state for creating NEW sheets which don't have an ID in the store yet
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [openInPreviewMode, setOpenInPreviewMode] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [initialSearch, setInitialSearch] = useState('');
 
     if (!currentUser) {
         return <Auth />;
     }
 
-    // Helper to get the actual up-to-date sheet object from global state
+    // ... helper ...
     const activeSheet = selectedSheetId ? sheets.find(s => s.id === selectedSheetId) : null;
 
-    const [initialSearch, setInitialSearch] = useState('');
-
+    // ... handlers ...
     const handleNavigate = (page: string) => {
         // Handle Role-Based Filter Navigation (e.g. 'admin_STAGING_SUPERVISOR')
         if (page.startsWith('admin_')) {
@@ -93,22 +136,18 @@ const App = () => {
                 return <AdminDashboard viewMode="database" onViewSheet={(s) => handleViewSheet(s)} />;
 
             case 'staging-editor':
-                // If creating new, we pass undefined. If editing, we pass the LIVE activeSheet.
                 return <StagingSheet
-                    key={isCreatingNew ? 'new' : activeSheet?.id} // Force re-render on ID change
+                    key={isCreatingNew ? 'new' : activeSheet?.id}
                     existingSheet={isCreatingNew ? undefined : activeSheet || undefined}
                     onCancel={() => handleNavigate('staging')}
-                    onLock={(updatedSheet) => {
-                        // After locking, usually navigate back or to loading
-                        handleNavigate('staging');
-                    }}
+                    onLock={(updatedSheet) => { handleNavigate('staging'); }}
                     initialPreview={openInPreviewMode}
                 />;
 
             case 'loading-editor':
                 if (!activeSheet) return <div>Error loading sheet data. Please try again.</div>;
                 return <LoadingSheet
-                    key={activeSheet.id} // Force re-render on ID change
+                    key={activeSheet.id}
                     sheet={activeSheet}
                     onClose={() => handleNavigate('loading')}
                     initialPreview={openInPreviewMode}
@@ -116,14 +155,12 @@ const App = () => {
 
             case 'staging':
             case 'loading':
-                // List View Logic
                 const isStagingView = currentPage === 'staging';
                 const filteredSheets = sheets.filter(s => {
                     const matchesSearch = s.id.includes(searchTerm) || s.supervisorName.toLowerCase().includes(searchTerm.toLowerCase());
                     if (isStagingView) {
-                        return matchesSearch; // Show all for staging history, or filter if needed
+                        return matchesSearch;
                     } else {
-                        // Loading View: Only show Locked (Ready for Loading) or Completed
                         return matchesSearch && (s.status === SheetStatus.LOCKED || s.status === SheetStatus.COMPLETED);
                     }
                 });
@@ -184,7 +221,6 @@ const App = () => {
                                                         {sheet.status === SheetStatus.DRAFT ? <Edit3 size={18} /> :
                                                             (sheet.status === SheetStatus.LOCKED && !isStagingView) ? <Lock size={18} /> : <Eye size={18} />}
                                                     </button>
-                                                    {/* Add Printer Icon for Completed Loading Sheets */}
                                                     {!isStagingView && sheet.status === SheetStatus.COMPLETED && (
                                                         <button
                                                             className="p-2 text-slate-400 hover:text-green-600 transition-colors"
@@ -208,7 +244,7 @@ const App = () => {
                 );
 
             case 'audit':
-                return <AdminDashboard viewMode="analytics" onViewSheet={(s) => handleViewSheet(s)} />; // Simplified reused view for audit demo
+                return <AdminDashboard viewMode="analytics" onViewSheet={(s) => handleViewSheet(s)} />;
 
             default:
                 return <div>Page Not Found</div>;
@@ -216,9 +252,11 @@ const App = () => {
     };
 
     return (
-        <Layout currentPage={currentPage} onNavigate={handleNavigate}>
-            {renderContent()}
-        </Layout>
+        <ErrorBoundary>
+            <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+                {renderContent()}
+            </Layout>
+        </ErrorBoundary>
     );
 };
 
