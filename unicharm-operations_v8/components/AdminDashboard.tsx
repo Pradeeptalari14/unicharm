@@ -26,8 +26,6 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onViewSheet, onNavigate, initialSearch = '' }) => {
     const { users, approveUser, deleteUser, sheets, deleteSheet, register, resetPassword, currentUser, isLoading } = useApp();
 
-    console.log("AdminDashboard Rendering. View:", viewMode, "User:", currentUser?.username, "Loading:", isLoading);
-
     const [searchTerm, setSearchTerm] = useState(initialSearch);
 
     // Create User State
@@ -831,10 +829,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode, onView
                                     .sort((a, b) => {
                                         if (!sortConfig) return 0;
                                         const { key, direction } = sortConfig;
-                                        // @ts-ignore
-                                        const valA = a[key] || '';
-                                        // @ts-ignore
-                                        const valB = b[key] || '';
+                                        const valA = a[key as keyof SheetData] || '';
+                                        const valB = b[key as keyof SheetData] || '';
 
                                         if (valA < valB) return direction === 'asc' ? -1 : 1;
                                         if (valA > valB) return direction === 'asc' ? 1 : -1;
