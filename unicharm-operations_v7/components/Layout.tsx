@@ -173,13 +173,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => setChangePasswordOpen(true)}
-                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
-                title="Change Password"
-              >
-                <Key size={14} />
-              </button>
+              {currentUser?.role === Role.ADMIN && (
+                <button
+                  onClick={() => setChangePasswordOpen(true)}
+                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-md transition-colors"
+                  title="Change Password"
+                >
+                  <Key size={14} />
+                </button>
+              )}
               <button
                 onClick={logout}
                 className="p-1.5 text-slate-400 hover:text-red-500 rounded-md transition-colors"

@@ -390,9 +390,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><UserIcon className="text-blue-600" /> User Management</h2>
                                     <p className="text-sm text-gray-500 mt-1">Manage system access and permissions.</p>
                                 </div>
-                                <button onClick={() => setCreateUserOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all md:w-auto w-full justify-center">
-                                    <UserPlus size={16} /> Add User
-                                </button>
+                                {currentUser?.role === Role.ADMIN && (
+                                    <button onClick={() => setCreateUserOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm transition-all md:w-auto w-full justify-center">
+                                        <UserPlus size={16} /> Add User
+                                    </button>
+                                )}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
@@ -423,20 +425,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ viewMode: initia
                                                         ) : <span className="text-orange-500 flex items-center gap-1 text-xs font-bold"><ShieldAlert size={12} /> Pending</span>}
                                                     </td>
                                                     <td className="p-4 text-center">
-                                                        <div className="flex justify-center gap-2">
-                                                            {!user.isApproved ? (
-                                                                <>
-                                                                    <button onClick={(e) => approveUser(user.id, true)} className="text-green-600 hover:bg-green-50 p-1 rounded font-bold text-xs uppercase">Approve</button>
-                                                                    <button onClick={(e) => approveUser(user.id, false)} className="text-red-600 hover:bg-red-50 p-1 rounded font-bold text-xs uppercase">Reject</button>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <button onClick={() => toggleUserActive(user.id, user.isActive === false)} className="text-gray-400 hover:text-blue-600 p-2 rounded" title="Toggle Active"><UserCheck size={16} /></button>
-                                                                    <button onClick={(e) => { e.stopPropagation(); setResetData({ id: user.id, username: user.username, newPass: '' }); setResetPasswordOpen(true); }} className="text-gray-400 hover:text-orange-600 p-2 rounded" title="Reset Password"><Key size={16} /></button>
-                                                                    <button onClick={(e) => handleDeleteUser(e, user.id, user.username)} className="text-gray-400 hover:text-red-600 p-2 rounded" title="Delete"><Trash2 size={16} /></button>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        {currentUser?.role === Role.ADMIN && (
+                                                            <div className="flex justify-center gap-2">
+                                                                {!user.isApproved ? (
+                                                                    <>
+                                                                        <button onClick={(e) => approveUser(user.id, true)} className="text-green-600 hover:bg-green-50 p-1 rounded font-bold text-xs uppercase">Approve</button>
+                                                                        <button onClick={(e) => approveUser(user.id, false)} className="text-red-600 hover:bg-red-50 p-1 rounded font-bold text-xs uppercase">Reject</button>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <button onClick={() => toggleUserActive(user.id, user.isActive === false)} className="text-gray-400 hover:text-blue-600 p-2 rounded" title="Toggle Active"><UserCheck size={16} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); setResetData({ id: user.id, username: user.username, newPass: '' }); setResetPasswordOpen(true); }} className="text-gray-400 hover:text-orange-600 p-2 rounded" title="Reset Password"><Key size={16} /></button>
+                                                                        <button onClick={(e) => handleDeleteUser(e, user.id, user.username)} className="text-gray-400 hover:text-red-600 p-2 rounded" title="Delete"><Trash2 size={16} /></button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
