@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../AppContext';
 import { Role } from '../types';
-import { UserPlus, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { UserPlus, LogIn, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export const Auth = () => {
     const { login, register } = useApp();
@@ -16,6 +16,7 @@ export const Auth = () => {
     const [role, setRole] = useState<Role>(Role.STAGING_SUPERVISOR);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const resetForm = () => {
         setUsername('');
@@ -148,16 +149,23 @@ export const Auth = () => {
                         </div>
                     )}
 
-                    <div>
+                    <div className="relative">
                         <input
                             id="loginPassword"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             required
-                            className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 focus:border-blue-400 focus:bg-white/20 focus:outline-none transition-all text-sm font-medium text-white placeholder-white/50"
+                            className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/10 focus:border-blue-400 focus:bg-white/20 focus:outline-none transition-all text-sm font-medium text-white placeholder-white/50 pr-10"
                             placeholder="Password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
                     </div>
 
                     <div className="relative">
